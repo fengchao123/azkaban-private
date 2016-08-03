@@ -1,0 +1,3 @@
+_AzkabanTestDir*
+*.log
+/build/
