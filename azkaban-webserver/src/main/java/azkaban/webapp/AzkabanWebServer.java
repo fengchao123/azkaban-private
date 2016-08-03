@@ -689,7 +689,7 @@ public class AzkabanWebServer extends AzkabanServer {
     boolean ssl;
     int port;
     final Server server = new Server();
-    if (azkabanSettings.getBoolean("jetty.use.ssl", true)) {
+    if (azkabanSettings.getBoolean("jetty.use.ssl", false)) {
       int sslPortNumber =
           azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
       port = sslPortNumber;
