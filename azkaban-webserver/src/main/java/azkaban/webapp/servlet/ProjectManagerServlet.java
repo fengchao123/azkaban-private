@@ -157,7 +157,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         handleJobPage(req, resp, session);
       } else if (hasParam(req, "flow")) {
         handleFlowPage(req, resp, session);
-      } else if (hasParam(req, "delete")) {
+      } else if (hasParam(req, "flow2")) {
+        handleFlowPage2(req, resp, session);
+      }else if (hasParam(req, "delete")) {
         handleRemoveProject(req, resp, session);
       } else if (hasParam(req, "purge")) {
         handlePurgeProject(req, resp, session);
@@ -1532,6 +1534,77 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
+  private void handleFlowPage2(HttpServletRequest req, HttpServletResponse resp,
+                              Session session) throws ServletException {
+    Page page =
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/flowpage2.vm");
+    String projectName = getParam(req, "project");
+    String flowName = getParam(req, "flow2");
+
+    User user = session.getUser();
+    Project project = null;
+    Flow flow = null;
+    try {
+      project = projectManager.getProject(projectName);
+      if (project == null) {
+        page.add("errorMsg", "Project " + projectName + " not found.");
+        page.render();
+        return;
+      }
+
+      if (!hasPermission(project, user, Type.READ)) {
+        throw new AccessControlException("No permission Project " + projectName
+                + ".");
+      }
+
+      page.add("project", project);
+
+      flow = project.getFlow(flowName);
+      if (flow == null) {
+        page.add("errorMsg", "Flow " + flowName + " not found.");
+      } else {
+        page.add("flowid", flow.getId());
+
+        Map<String,Map<String,Object>> gnode = new HashMap<String,Map<String,Object>>();
+        Collection<Node> nodes = flow.getNodes();
+        int left = 60;
+        int top = 60;
+        for (Node node :nodes ) {
+          Map<String,Object> attmap = new HashMap<String,Object>();
+          attmap.put("name","node_" + node.getId());
+          attmap.put("left",left);
+          attmap.put("top",top);
+          left+=20;
+          top +=20;
+          attmap.put("type",node.getType());
+          attmap.put("width",86);
+          attmap.put("height",24);
+          gnode.put("flow_node_" + node.getId(),attmap);
+          //node.get
+        }
+        page.add("gnode",JSONUtils.toJSON(gnode));
+
+        Map<String,Map<String,Object>> gline = new HashMap<String,Map<String,Object>>();
+        Collection<Edge> edges = flow.getEdges();
+        for (Edge edge :edges ) {
+          Map<String,Object> attmap = new HashMap<String,Object>();
+          attmap.put("type","sl");
+          attmap.put("marked",false);
+          attmap.put("from","flow_node_" + edge.getSourceId());
+          attmap.put("to","flow_node_" + edge.getTargetId());
+          gline.put("flow_node_" + edge.getId(),attmap);
+        }
+
+        page.add("gline",JSONUtils.toJSON(gline));
+      }
+    } catch (AccessControlException e) {
+      page.add("errorMsg", e.getMessage());
+    }
+
+    page.render();
+  }
+
   private void handleProjectPage(HttpServletRequest req,
       HttpServletResponse resp, Session session) throws ServletException {
     Page page =
@@ -1593,6 +1666,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
     page.render();
   }
+
 
   private void handleCreate(HttpServletRequest req, HttpServletResponse resp,
       Session session) throws ServletException {

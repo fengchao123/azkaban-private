@@ -71,7 +71,14 @@
           </div>
           <div class="header-control">
             <div class="pull-right header-form">
-              <button type="button" class="btn btn-sm btn-success" id="executebtn">Schedule / Execute Flow</button>
+              <script type="text/javascript">
+                function gotoEditpage(){
+                  location.href="${context}/manager?project=${project.name}&flow2=${flowid}";
+                }
+              </script>
+              <button type="button" class="btn btn-sm btn-success" id="editbtn" onclick="gotoEditpage();">编辑</button>
+
+              <button type="button" class="btn btn-sm btn-success" id="executebtn" >Schedule / Execute Flow</button>
             </div>
           </div>
         </div>

@@ -1,0 +1,70 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+  ## Graph view.
+<!--[if lt IE 9]>
+<?import namespace="v" implementation="#default#VML" ?>
+<![endif]-->
+<script type="text/javascript">
+var property={
+	width:1400,
+	height:500,
+	toolBtns:["start","end","task","node","chat","state","plug","join","fork","complex","command"],
+	haveHead:true,
+	headBtns:["new","open","save","undo","redo","reload"],//如果haveHead=true，则定义HEAD区的按钮
+	haveTool:true,
+	haveGroup:false,
+	useOperStack:true
+};
+var remark={
+	command:"shell脚本",
+	direct:"转换连线",
+	start:"开始结点",
+	end:"结束结点",
+	shell:"shell结点",
+	node:"自动结点",
+	chat:"决策结点",
+	state:"状态结点",
+	plug:"附加插件",
+	fork:"分支结点",
+	"join":"联合结点",
+	complex:"复合结点"
+};
+var flow;
+$(document).ready(function(){
+	flow=$.createGooFlow($("#flow"),property);
+	flow.setNodeRemarks(remark);
+	flow.onItemDel=function(id,type){
+		return confirm("确定要删除该单元吗?");
+	}
+	jsondata={
+		title:"aaa",
+		nodes:${gnode},
+		lines:${gline}
+	};
+	flow.$max=9;
+	flow.loadData(jsondata);
+});
+</script>
+
+
+
+<div id="flow"></div>
+
+
+
+    </div>
+
