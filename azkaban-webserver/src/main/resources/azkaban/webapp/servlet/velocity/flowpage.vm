@@ -73,7 +73,7 @@
             <div class="pull-right header-form">
               <script type="text/javascript">
                 function gotoEditpage(){
-                  location.href="${context}/manager?project=${project.name}&flow2=${flowid}";
+                  location.href="${context}/manager?project=${project.name}&edit=1";
                 }
               </script>
               <button type="button" class="btn btn-sm btn-success" id="editbtn" onclick="gotoEditpage();">编辑</button>

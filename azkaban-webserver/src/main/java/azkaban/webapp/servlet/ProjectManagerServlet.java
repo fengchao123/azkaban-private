@@ -84,16 +84,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String APPLICATION_ZIP_MIME_TYPE = "application/zip";
   private static final long serialVersionUID = 1;
   private static final Logger logger = Logger
-      .getLogger(ProjectManagerServlet.class);
+          .getLogger(ProjectManagerServlet.class);
   private static final NodeLevelComparator NODE_LEVEL_COMPARATOR =
-      new NodeLevelComparator();
+          new NodeLevelComparator();
   private static final String LOCKDOWN_CREATE_PROJECTS_KEY =
-      "lockdown.create.projects";
+          "lockdown.create.projects";
   private static final String LOCKDOWN_UPLOAD_PROJECTS_KEY =
-      "lockdown.upload.projects";
-  
+          "lockdown.upload.projects";
+
   private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
-      "project.download.buffer.size";
+          "project.download.buffer.size";
 
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
@@ -121,27 +121,27 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     scheduleManager = server.getScheduleManager();
     userManager = server.getUserManager();
     lockdownCreateProjects =
-        server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
+            server.getServerProps().getBoolean(LOCKDOWN_CREATE_PROJECTS_KEY, false);
     if (lockdownCreateProjects) {
       logger.info("Creation of projects is locked down");
     }
-    
+
     lockdownUploadProjects =
-        server.getServerProps().getBoolean(LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
+            server.getServerProps().getBoolean(LOCKDOWN_UPLOAD_PROJECTS_KEY, false);
     if (lockdownUploadProjects) {
       logger.info("Uploading of projects is locked down");
     }
-    
+
     downloadBufferSize =
-        server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
-            8192);
+            server.getServerProps().getInt(PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES,
+                    8192);
 
     logger.info("downloadBufferSize: " + downloadBufferSize);
   }
 
   @Override
   protected void handleGet(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+                           Session session) throws ServletException, IOException {
     if (hasParam(req, "project")) {
       if (hasParam(req, "ajax")) {
         handleAJAXAction(req, resp, session);
@@ -159,12 +159,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         handleFlowPage(req, resp, session);
       } else if (hasParam(req, "flow2")) {
         handleFlowPage2(req, resp, session);
-      }else if (hasParam(req, "delete")) {
+      } else if (hasParam(req, "delete")) {
         handleRemoveProject(req, resp, session);
       } else if (hasParam(req, "purge")) {
         handlePurgeProject(req, resp, session);
       } else if (hasParam(req, "download")) {
         handleDownloadProject(req, resp, session);
+      } else if (hasParam(req, "edit")) {
+        handleProjectPage2(req, resp, session);
       } else {
         handleProjectPage(req, resp, session);
       }
@@ -174,16 +176,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/projectpage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/projectpage.vm");
     page.add("errorMsg", "No project set.");
     page.render();
   }
 
   @Override
   protected void handleMultiformPost(HttpServletRequest req,
-      HttpServletResponse resp, Map<String, Object> params, Session session)
-      throws ServletException, IOException {
+                                     HttpServletResponse resp, Map<String, Object> params, Session session)
+          throws ServletException, IOException {
     // Looks like a duplicate, but this is a move away from the regular
     // multiform post + redirect
     // to a more ajax like command.
@@ -204,7 +206,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   @Override
   protected void handlePost(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException, IOException {
+                            Session session) throws ServletException, IOException {
     if (hasParam(req, "action")) {
       String action = getParam(req, "action");
       if (action.equals("create")) {
@@ -214,8 +216,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleAJAXAction(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
-      IOException {
+                                HttpServletResponse resp, Session session) throws ServletException,
+          IOException {
     String projectName = getParam(req, "project");
     User user = session.getUser();
 
@@ -311,7 +313,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private boolean handleAjaxPermission(Project project, User user, Type type,
-      Map<String, Object> ret) {
+                                       Map<String, Object> ret) {
     if (hasPermission(project, user, type)) {
       return true;
     }
@@ -321,7 +323,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchProjectLogEvents(Project project,
-      HttpServletRequest req, HashMap<String, Object> ret) throws ServletException {
+                                         HttpServletRequest req, HashMap<String, Object> ret) throws ServletException {
     int num = this.getIntParam(req, "size", 1000);
     int skip = this.getIntParam(req, "skip", 0);
 
@@ -332,7 +334,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       throw new ServletException(e);
     }
 
-    String[] columns = new String[] { "user", "time", "type", "message" };
+    String[] columns = new String[]{"user", "time", "type", "message"};
     ret.put("columns", columns);
 
     List<Object[]> eventData = new ArrayList<>();
@@ -360,8 +362,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchFlowDetails(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
-      throws ServletException {
+                                    HashMap<String, Object> ret, HttpServletRequest req)
+          throws ServletException {
     String flowName = getParam(req, "flow");
 
     Flow flow = null;
@@ -379,14 +381,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchLastSuccessfulFlowExecution(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
-      throws ServletException {
+                                                    HashMap<String, Object> ret, HttpServletRequest req)
+          throws ServletException {
     String flowId = getParam(req, "flow");
     List<ExecutableFlow> exFlows = null;
     try {
       exFlows =
-          executorManager.getExecutableFlows(project.getId(), flowId, 0, 1,
-              Status.SUCCEEDED);
+              executorManager.getExecutableFlows(project.getId(), flowId, 0, 1,
+                      Status.SUCCEEDED);
     } catch (ExecutorManagerException e) {
       ret.put("error", "Error retrieving executable flows");
       return;
@@ -404,8 +406,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchFlowExecutions(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
-      throws ServletException {
+                                       HashMap<String, Object> ret, HttpServletRequest req)
+          throws ServletException {
     String flowId = getParam(req, "flow");
     int from = Integer.valueOf(getParam(req, "start"));
     int length = Integer.valueOf(getParam(req, "length"));
@@ -414,8 +416,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     int total = 0;
     try {
       total =
-          executorManager.getExecutableFlows(project.getId(), flowId, from,
-              length, exFlows);
+              executorManager.getExecutableFlows(project.getId(), flowId, from,
+                      length, exFlows);
     } catch (ExecutorManagerException e) {
       ret.put("error", "Error retrieving executable flows");
     }
@@ -445,7 +447,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   /**
    * Download project zip file from DB and send it back client.
-   *
+   * <p>
    * This method requires a project name and an optional project version.
    *
    * @param req
@@ -455,8 +457,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * @throws IOException
    */
   private void handleDownloadProject(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
-      IOException {
+                                     HttpServletResponse resp, Session session) throws ServletException,
+          IOException {
 
     User user = session.getUser();
     String projectName = getParam(req, "project");
@@ -465,7 +467,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Project project = projectManager.getProject(projectName);
     if (project == null) {
       this.setErrorMessageInCookie(resp, "Project " + projectName
-          + " doesn't exist.");
+              + " doesn't exist.");
       resp.sendRedirect(req.getContextPath());
       return;
     }
@@ -480,22 +482,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     OutputStream outStream = null;
     try {
       projectFileHandler =
-          projectManager.getProjectFileHandler(project, version);
+              projectManager.getProjectFileHandler(project, version);
       if (projectFileHandler == null) {
         this.setErrorMessageInCookie(resp, "Project " + projectName
-            + " with version " + version + " doesn't exist");
+                + " with version " + version + " doesn't exist");
         resp.sendRedirect(req.getContextPath());
         return;
       }
       File projectZipFile = projectFileHandler.getLocalFile();
       String logStr =
-          String.format(
-              "downloading project zip file for project \"%s\" at \"%s\""
-                  + " size: %d type: %s  fileName: \"%s\"",
-              projectFileHandler.getFileName(),
-              projectZipFile.getAbsolutePath(), projectZipFile.length(),
-              projectFileHandler.getFileType(),
-              projectFileHandler.getFileName());
+              String.format(
+                      "downloading project zip file for project \"%s\" at \"%s\""
+                              + " size: %d type: %s  fileName: \"%s\"",
+                      projectFileHandler.getFileName(),
+                      projectZipFile.getAbsolutePath(), projectZipFile.length(),
+                      projectFileHandler.getFileType(),
+                      projectFileHandler.getFileName());
       logger.info(logStr);
 
       // now set up HTTP response for downloading file
@@ -505,13 +507,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       String headerKey = "Content-Disposition";
       String headerValue =
-          String.format("attachment; filename=\"%s\"",
-              projectFileHandler.getFileName());
+              String.format("attachment; filename=\"%s\"",
+                      projectFileHandler.getFileName());
       resp.setHeader(headerKey, headerValue);
       resp.setHeader("version",
-          Integer.toString(projectFileHandler.getVersion()));
+              Integer.toString(projectFileHandler.getVersion()));
       resp.setHeader("projectId",
-          Integer.toString(projectFileHandler.getProjectId()));
+              Integer.toString(projectFileHandler.getProjectId()));
 
       outStream = resp.getOutputStream();
 
@@ -524,8 +526,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     } catch (Throwable e) {
       logger.error(
-          "Encountered error while downloading project zip file for project: "
-              + projectName + " by user: " + user.getUserId(), e);
+              "Encountered error while downloading project zip file for project: "
+                      + projectName + " by user: " + user.getUserId(), e);
       throw new ServletException(e);
     } finally {
       IOUtils.closeQuietly(inStream);
@@ -543,8 +545,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    * to purge the project if things looks good
    **/
   private void handlePurgeProject(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
-      IOException {
+                                  HttpServletResponse resp, Session session) throws ServletException,
+          IOException {
     User user = session.getUser();
     HashMap<String, Object> ret = new HashMap<String, Object>();
     boolean isOperationSuccessful = true;
@@ -555,14 +557,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       if (StringUtils.isNumeric(projectParam)) {
         project = projectManager.getProject(Integer.parseInt(projectParam)); // get
-                                                                             // project
-                                                                             // by
-                                                                             // Id
+        // project
+        // by
+        // Id
       } else {
         project = projectManager.getProject(projectParam); // get project by
-                                                           // name (name cannot
-                                                           // start
-                                                           // from ints)
+        // name (name cannot
+        // start
+        // from ints)
       }
 
       // invalid project
@@ -573,16 +575,16 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       // project is already deleted
       if (isOperationSuccessful
-          && projectManager.isActiveProject(project.getId())) {
+              && projectManager.isActiveProject(project.getId())) {
         ret.put("error", "Project " + project.getName()
-            + " should be deleted before purging");
+                + " should be deleted before purging");
         isOperationSuccessful = false;
       }
 
       // only eligible users can purge a project
       if (isOperationSuccessful && !hasPermission(project, user, Type.ADMIN)) {
         ret.put("error", "Cannot purge. User '" + user.getUserId()
-            + "' is not an ADMIN.");
+                + "' is not an ADMIN.");
         isOperationSuccessful = false;
       }
 
@@ -599,22 +601,22 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleRemoveProject(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
-      IOException {
+                                   HttpServletResponse resp, Session session) throws ServletException,
+          IOException {
     User user = session.getUser();
     String projectName = getParam(req, "project");
 
     Project project = projectManager.getProject(projectName);
     if (project == null) {
       this.setErrorMessageInCookie(resp, "Project " + projectName
-          + " doesn't exist.");
+              + " doesn't exist.");
       resp.sendRedirect(req.getContextPath());
       return;
     }
 
     if (!hasPermission(project, user, Type.ADMIN)) {
       this.setErrorMessageInCookie(resp,
-          "Cannot delete. User '" + user.getUserId() + "' is not an ADMIN.");
+              "Cannot delete. User '" + user.getUserId() + "' is not an ADMIN.");
       resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
       return;
     }
@@ -635,7 +637,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     if (sflow != null) {
       this.setErrorMessageInCookie(resp, "Cannot delete. Please unschedule "
-          + sflow.getScheduleName() + ".");
+              + sflow.getScheduleName() + ".");
 
       resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
       return;
@@ -651,7 +653,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
     if (exflow != null) {
       this.setErrorMessageInCookie(resp, "Cannot delete. Executable flow "
-          + exflow.getExecutionId() + " is still running.");
+              + exflow.getExecutionId() + " is still running.");
       resp.sendRedirect(req.getRequestURI() + "?project=" + projectName);
       return;
     }
@@ -665,13 +667,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
 
     this.setSuccessMessageInCookie(resp, "Project '" + projectName
-        + "' was successfully deleted.");
+            + "' was successfully deleted.");
     resp.sendRedirect(req.getContextPath());
   }
 
   private void ajaxChangeDescription(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req, User user)
-      throws ServletException {
+                                     HashMap<String, Object> ret, HttpServletRequest req, User user)
+          throws ServletException {
     String description = getParam(req, "description");
     project.setDescription(description);
 
@@ -683,14 +685,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchJobInfo(Project project, HashMap<String, Object> ret,
-      HttpServletRequest req) throws ServletException {
+                                HttpServletRequest req) throws ServletException {
     String flowName = getParam(req, "flowName");
     String jobName = getParam(req, "jobName");
 
     Flow flow = project.getFlow(flowName);
     if (flow == null) {
       ret.put("error",
-          "Flow " + flowName + " not found in project " + project.getName());
+              "Flow " + flowName + " not found in project " + project.getName());
       return;
     }
 
@@ -735,16 +737,30 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     ret.put("overrideParams", overrideParams);
   }
 
+  private void ajaxFetchProjectFlows(Project project,
+                                     HashMap<String, Object> ret, HttpServletRequest req)
+          throws ServletException {
+    ArrayList<Map<String, Object>> flowList =
+            new ArrayList<Map<String, Object>>();
+    for (Flow flow : project.getFlows()) {
+      HashMap<String, Object> flowObj = new HashMap<String, Object>();
+      flowObj.put("flowId", flow.getId());
+      flowList.add(flowObj);
+    }
+
+    ret.put("flows", flowList);
+  }
+
   private void ajaxSetJobOverrideProperty(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
-      throws ServletException {
+                                          HashMap<String, Object> ret, HttpServletRequest req)
+          throws ServletException {
     String flowName = getParam(req, "flowName");
     String jobName = getParam(req, "jobName");
 
     Flow flow = project.getFlow(flowName);
     if (flow == null) {
       ret.put("error",
-          "Flow " + flowName + " not found in project " + project.getName());
+              "Flow " + flowName + " not found in project " + project.getName());
       return;
     }
 
@@ -765,33 +781,19 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
   }
 
-  private void ajaxFetchProjectFlows(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
-      throws ServletException {
-    ArrayList<Map<String, Object>> flowList =
-        new ArrayList<Map<String, Object>>();
-    for (Flow flow : project.getFlows()) {
-      HashMap<String, Object> flowObj = new HashMap<String, Object>();
-      flowObj.put("flowId", flow.getId());
-      flowList.add(flowObj);
-    }
-
-    ret.put("flows", flowList);
-  }
-
   private void ajaxFetchFlowGraph(Project project, HashMap<String, Object> ret,
-      HttpServletRequest req) throws ServletException {
+                                  HttpServletRequest req) throws ServletException {
     String flowId = getParam(req, "flow");
 
     fillFlowInfo(project, flowId, ret);
   }
 
   private void fillFlowInfo(Project project, String flowId,
-      HashMap<String, Object> ret) {
+                            HashMap<String, Object> ret) {
     Flow flow = project.getFlow(flowId);
 
     ArrayList<Map<String, Object>> nodeList =
-        new ArrayList<Map<String, Object>>();
+            new ArrayList<Map<String, Object>>();
     for (Node node : flow.getNodes()) {
       HashMap<String, Object> nodeObj = new HashMap<String, Object>();
       nodeObj.put("id", node.getId());
@@ -826,8 +828,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchFlowNodeData(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req)
-      throws ServletException {
+                                     HashMap<String, Object> ret, HttpServletRequest req)
+          throws ServletException {
     String flowId = getParam(req, "flow");
     Flow flow = project.getFlow(flowId);
 
@@ -867,7 +869,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxFetchFlow(Project project, HashMap<String, Object> ret,
-      HttpServletRequest req) throws ServletException {
+                             HttpServletRequest req) throws ServletException {
     String flowId = getParam(req, "flow");
     Flow flow = project.getFlow(flowId);
 
@@ -906,7 +908,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxAddProxyUser(Project project, HashMap<String, Object> ret,
-      HttpServletRequest req, User user) throws ServletException {
+                                HttpServletRequest req, User user) throws ServletException {
     String name = getParam(req, "name");
 
     logger.info("Adding proxy user " + name + " by " + user.getUserId());
@@ -918,14 +920,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
     } else {
       ret.put("error", "User " + user.getUserId()
-          + " has no permission to add " + name + " as proxy user.");
+              + " has no permission to add " + name + " as proxy user.");
       return;
     }
   }
 
   private void ajaxRemoveProxyUser(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req, User user)
-      throws ServletException {
+                                   HashMap<String, Object> ret, HttpServletRequest req, User user)
+          throws ServletException {
     String name = getParam(req, "name");
 
     logger.info("Removing proxy user " + name + " by " + user.getUserId());
@@ -938,7 +940,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxAddPermission(Project project, HashMap<String, Object> ret,
-      HttpServletRequest req, User user) throws ServletException {
+                                 HttpServletRequest req, User user) throws ServletException {
     String name = getParam(req, "name");
     boolean group = Boolean.parseBoolean(getParam(req, "group"));
 
@@ -966,9 +968,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     boolean read = Boolean.parseBoolean(getParam(req, "permissions[read]"));
     boolean write = Boolean.parseBoolean(getParam(req, "permissions[write]"));
     boolean execute =
-        Boolean.parseBoolean(getParam(req, "permissions[execute]"));
+            Boolean.parseBoolean(getParam(req, "permissions[execute]"));
     boolean schedule =
-        Boolean.parseBoolean(getParam(req, "permissions[schedule]"));
+            Boolean.parseBoolean(getParam(req, "permissions[schedule]"));
 
     Permission perm = new Permission();
     if (admin) {
@@ -988,15 +990,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxChangePermissions(Project project,
-      HashMap<String, Object> ret, HttpServletRequest req, User user)
-      throws ServletException {
+                                     HashMap<String, Object> ret, HttpServletRequest req, User user)
+          throws ServletException {
     boolean admin = Boolean.parseBoolean(getParam(req, "permissions[admin]"));
     boolean read = Boolean.parseBoolean(getParam(req, "permissions[read]"));
     boolean write = Boolean.parseBoolean(getParam(req, "permissions[write]"));
     boolean execute =
-        Boolean.parseBoolean(getParam(req, "permissions[execute]"));
+            Boolean.parseBoolean(getParam(req, "permissions[execute]"));
     boolean schedule =
-        Boolean.parseBoolean(getParam(req, "permissions[schedule]"));
+            Boolean.parseBoolean(getParam(req, "permissions[schedule]"));
 
     boolean group = Boolean.parseBoolean(getParam(req, "group"));
 
@@ -1030,7 +1032,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       try {
         projectManager
-            .updateProjectPermission(project, name, perm, group, user);
+                .updateProjectPermission(project, name, perm, group, user);
       } catch (ProjectManagerException e) {
         ret.put("error", e.getMessage());
       }
@@ -1052,7 +1054,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
    */
   private void ajaxGetPermissions(Project project, HashMap<String, Object> ret) {
     ArrayList<HashMap<String, Object>> permissions =
-        new ArrayList<HashMap<String, Object>>();
+            new ArrayList<HashMap<String, Object>>();
     for (Pair<String, Permission> perm : project.getUserPermissions()) {
       HashMap<String, Object> permObj = new HashMap<String, Object>();
       String userId = perm.getFirst();
@@ -1066,9 +1068,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxGetGroupPermissions(Project project,
-      HashMap<String, Object> ret) {
+                                       HashMap<String, Object> ret) {
     ArrayList<HashMap<String, Object>> permissions =
-        new ArrayList<HashMap<String, Object>>();
+            new ArrayList<HashMap<String, Object>>();
     for (Pair<String, Permission> perm : project.getGroupPermissions()) {
       HashMap<String, Object> permObj = new HashMap<String, Object>();
       String userId = perm.getFirst();
@@ -1087,11 +1089,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleProjectLogsPage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
-      IOException {
+                                     HttpServletResponse resp, Session session) throws ServletException,
+          IOException {
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/projectlogpage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/projectlogpage.vm");
     String projectName = getParam(req, "project");
 
     User user = session.getUser();
@@ -1103,12 +1105,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       } else {
         if (!hasPermission(project, user, Type.READ)) {
           throw new AccessControlException("No permission to view project "
-              + projectName + ".");
+                  + projectName + ".");
         }
 
         page.add("project", project);
         page.add("admins", Utils.flattenToString(
-            project.getUsersWithPermission(Type.ADMIN), ","));
+                project.getUsersWithPermission(Type.ADMIN), ","));
         Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
         page.add("userpermission", perm);
 
@@ -1140,11 +1142,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleJobHistoryPage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException,
-      IOException {
+                                    HttpServletResponse resp, Session session) throws ServletException,
+          IOException {
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/jobhistorypage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/jobhistorypage.vm");
     String projectName = getParam(req, "project");
     User user = session.getUser();
 
@@ -1176,7 +1178,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       numResults = executorManager.getNumberOfJobExecutions(project, jobId);
       int maxPage = (numResults / pageSize) + 1;
       List<ExecutableJobInfo> jobInfo =
-          executorManager.getExecutableJobs(project, jobId, skipPage, pageSize);
+              executorManager.getExecutableJobs(project, jobId, skipPage, pageSize);
 
       if (jobInfo == null || jobInfo.isEmpty()) {
         jobInfo = null;
@@ -1184,12 +1186,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       page.add("history", jobInfo);
 
       page.add("previous", new PageSelection("Previous", pageSize, true, false,
-          Math.max(pageNum - 1, 1)));
+              Math.max(pageNum - 1, 1)));
 
       page.add(
-          "next",
-          new PageSelection("Next", pageSize, false, false, Math.min(
-              pageNum + 1, maxPage)));
+              "next",
+              new PageSelection("Next", pageSize, false, false, Math.min(
+                      pageNum + 1, maxPage)));
 
       if (jobInfo != null) {
         ArrayList<Object> dataSeries = new ArrayList<Object>();
@@ -1213,43 +1215,43 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     int maxPage = (numResults / pageSize) + 1;
 
     page.add(
-        "page1",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-                pageStartValue, maxPage)));
+            "page1",
+            new PageSelection(String.valueOf(pageStartValue), pageSize,
+                    pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
+                    pageStartValue, maxPage)));
     pageStartValue++;
     page.add(
-        "page2",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-                pageStartValue, maxPage)));
+            "page2",
+            new PageSelection(String.valueOf(pageStartValue), pageSize,
+                    pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
+                    pageStartValue, maxPage)));
     pageStartValue++;
     page.add(
-        "page3",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-                pageStartValue, maxPage)));
+            "page3",
+            new PageSelection(String.valueOf(pageStartValue), pageSize,
+                    pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
+                    pageStartValue, maxPage)));
     pageStartValue++;
     page.add(
-        "page4",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-                pageStartValue, maxPage)));
+            "page4",
+            new PageSelection(String.valueOf(pageStartValue), pageSize,
+                    pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
+                    pageStartValue, maxPage)));
     pageStartValue++;
     page.add(
-        "page5",
-        new PageSelection(String.valueOf(pageStartValue), pageSize,
-            pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
-                pageStartValue, maxPage)));
+            "page5",
+            new PageSelection(String.valueOf(pageStartValue), pageSize,
+                    pageStartValue > maxPage, pageStartValue == pageNum, Math.min(
+                    pageStartValue, maxPage)));
 
     page.render();
   }
 
   private void handlePermissionPage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException {
+                                    HttpServletResponse resp, Session session) throws ServletException {
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/permissionspage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/permissionspage.vm");
     String projectName = getParam(req, "project");
     User user = session.getUser();
 
@@ -1261,13 +1263,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       } else {
         if (!hasPermission(project, user, Type.READ)) {
           throw new AccessControlException("No permission to view project "
-              + projectName + ".");
+                  + projectName + ".");
         }
 
         page.add("project", project);
         page.add("username", user.getUserId());
         page.add("admins", Utils.flattenToString(
-            project.getUsersWithPermission(Type.ADMIN), ","));
+                project.getUsersWithPermission(Type.ADMIN), ","));
         Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
         page.add("userpermission", perm);
 
@@ -1276,13 +1278,13 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
 
         List<Pair<String, Permission>> userPermission =
-            project.getUserPermissions();
+                project.getUserPermissions();
         if (userPermission != null && !userPermission.isEmpty()) {
           page.add("permissions", userPermission);
         }
 
         List<Pair<String, Permission>> groupPermission =
-            project.getGroupPermissions();
+                project.getGroupPermissions();
         if (groupPermission != null && !groupPermission.isEmpty()) {
           page.add("groupPermissions", groupPermission);
         }
@@ -1304,10 +1306,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleJobPage(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException {
+                             Session session) throws ServletException {
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/jobpage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/jobpage.vm");
     String projectName = getParam(req, "project");
     String flowName = getParam(req, "flow");
     String jobName = getParam(req, "job");
@@ -1324,7 +1326,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project "
-            + projectName + ".");
+                + projectName + ".");
       }
 
       page.add("project", project);
@@ -1345,7 +1347,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       Props prop = projectManager.getProperties(project, node.getJobSource());
       Props overrideProp =
-          projectManager.getJobOverrideProperty(project, jobName);
+              projectManager.getJobOverrideProperty(project, jobName);
       if (overrideProp == null) {
         overrideProp = new Props();
       }
@@ -1394,7 +1396,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
       ArrayList<Pair<String, String>> parameters =
-          new ArrayList<Pair<String, String>>();
+              new ArrayList<Pair<String, String>>();
       // Parameter
       for (String key : comboProp.getKeySet()) {
         String value = comboProp.get(key);
@@ -1411,10 +1413,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handlePropertyPage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException {
+                                  HttpServletResponse resp, Session session) throws ServletException {
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/propertypage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/propertypage.vm");
     String projectName = getParam(req, "project");
     String flowName = getParam(req, "flow");
     String jobName = getParam(req, "job");
@@ -1433,7 +1435,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission to view project "
-            + projectName + ".");
+                + projectName + ".");
       }
       page.add("project", project);
 
@@ -1469,7 +1471,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       ArrayList<String> dependingProps = new ArrayList<String>();
       FlowProps child =
-          flow.getFlowProps(flow.getNode(jobName).getPropsSource());
+              flow.getFlowProps(flow.getNode(jobName).getPropsSource());
       while (!child.getSource().equals(propSource)) {
         dependingProps.add(child.getSource());
         child = flow.getFlowProps(child.getInheritedSource());
@@ -1479,7 +1481,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
 
       ArrayList<Pair<String, String>> parameters =
-          new ArrayList<Pair<String, String>>();
+              new ArrayList<Pair<String, String>>();
       // Parameter
       for (String key : prop.getKeySet()) {
         String value = prop.get(key);
@@ -1497,10 +1499,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleFlowPage(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException {
+                              Session session) throws ServletException {
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/flowpage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/flowpage.vm");
     String projectName = getParam(req, "project");
     String flowName = getParam(req, "flow");
 
@@ -1517,7 +1519,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       if (!hasPermission(project, user, Type.READ)) {
         throw new AccessControlException("No permission Project " + projectName
-            + ".");
+                + ".");
       }
 
       page.add("project", project);
@@ -1535,7 +1537,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleFlowPage2(HttpServletRequest req, HttpServletResponse resp,
-                              Session session) throws ServletException {
+                               Session session) throws ServletException {
     Page page =
             newPage(req, resp, session,
                     "azkaban/webapp/servlet/velocity/flowpage2.vm");
@@ -1566,37 +1568,37 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       } else {
         page.add("flowid", flow.getId());
 
-        Map<String,Map<String,Object>> gnode = new HashMap<String,Map<String,Object>>();
+        Map<String, Map<String, Object>> gnode = new HashMap<String, Map<String, Object>>();
         Collection<Node> nodes = flow.getNodes();
         int left = 60;
         int top = 60;
-        for (Node node :nodes ) {
-          Map<String,Object> attmap = new HashMap<String,Object>();
-          attmap.put("name","node_" + node.getId());
-          attmap.put("left",left);
-          attmap.put("top",top);
-          left+=20;
-          top +=20;
-          attmap.put("type",node.getType());
-          attmap.put("width",86);
-          attmap.put("height",24);
-          gnode.put("flow_node_" + node.getId(),attmap);
+        for (Node node : nodes) {
+          Map<String, Object> attmap = new HashMap<String, Object>();
+          attmap.put("name", "节点_" + node.getId());
+          attmap.put("left", left);
+          attmap.put("top", top);
+          left += 100;
+          top += 50;
+          attmap.put("type", node.getType());
+          attmap.put("width", 86);
+          attmap.put("height", 24);
+          gnode.put("flow_node_" + node.getId(), attmap);
           //node.get
         }
-        page.add("gnode",JSONUtils.toJSON(gnode));
+        page.add("gnode", JSONUtils.toJSON(gnode));
 
-        Map<String,Map<String,Object>> gline = new HashMap<String,Map<String,Object>>();
+        Map<String, Map<String, Object>> gline = new HashMap<String, Map<String, Object>>();
         Collection<Edge> edges = flow.getEdges();
-        for (Edge edge :edges ) {
-          Map<String,Object> attmap = new HashMap<String,Object>();
-          attmap.put("type","sl");
-          attmap.put("marked",false);
-          attmap.put("from","flow_node_" + edge.getSourceId());
-          attmap.put("to","flow_node_" + edge.getTargetId());
-          gline.put("flow_node_" + edge.getId(),attmap);
+        for (Edge edge : edges) {
+          Map<String, Object> attmap = new HashMap<String, Object>();
+          attmap.put("type", "sl");
+          attmap.put("marked", false);
+          attmap.put("from", "flow_node_" + edge.getSourceId());
+          attmap.put("to", "flow_node_" + edge.getTargetId());
+          gline.put("flow_line_" + edge.getId(), attmap);
         }
 
-        page.add("gline",JSONUtils.toJSON(gline));
+        page.add("gline", JSONUtils.toJSON(gline));
       }
     } catch (AccessControlException e) {
       page.add("errorMsg", e.getMessage());
@@ -1606,10 +1608,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleProjectPage(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws ServletException {
+                                 HttpServletResponse resp, Session session) throws ServletException {
     Page page =
-        newPage(req, resp, session,
-            "azkaban/webapp/servlet/velocity/projectpage.vm");
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/projectpage.vm");
     String projectName = getParam(req, "project");
 
     User user = session.getUser();
@@ -1621,27 +1623,27 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       } else {
         if (!hasPermission(project, user, Type.READ)) {
           throw new AccessControlException("No permission to view project "
-              + projectName + ".");
+                  + projectName + ".");
         }
 
         page.add("project", project);
         page.add("admins", Utils.flattenToString(
-            project.getUsersWithPermission(Type.ADMIN), ","));
+                project.getUsersWithPermission(Type.ADMIN), ","));
         Permission perm = this.getPermissionObject(project, user, Type.ADMIN);
         page.add("userpermission", perm);
         page.add(
-            "validatorFixPrompt",
-            projectManager.getProps().getBoolean(
-                ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_FLAG_PARAM,
-                ValidatorConfigs.DEFAULT_VALIDATOR_AUTO_FIX_PROMPT_FLAG));
+                "validatorFixPrompt",
+                projectManager.getProps().getBoolean(
+                        ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_FLAG_PARAM,
+                        ValidatorConfigs.DEFAULT_VALIDATOR_AUTO_FIX_PROMPT_FLAG));
         page.add(
-            "validatorFixLabel",
-            projectManager.getProps().get(
-                ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LABEL_PARAM));
+                "validatorFixLabel",
+                projectManager.getProps().get(
+                        ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LABEL_PARAM));
         page.add(
-            "validatorFixLink",
-            projectManager.getProps().get(
-                ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LINK_PARAM));
+                "validatorFixLink",
+                projectManager.getProps().get(
+                        ValidatorConfigs.VALIDATOR_AUTO_FIX_PROMPT_LINK_PARAM));
 
         boolean adminPerm = perm.isPermissionSet(Type.ADMIN);
         if (adminPerm) {
@@ -1668,11 +1670,79 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
 
+  private void handleProjectPage2(HttpServletRequest req,
+                                  HttpServletResponse resp, Session session) throws ServletException {
+    Page page =
+            newPage(req, resp, session,
+                    "azkaban/webapp/servlet/velocity/projectpage2.vm");
+    String projectName = getParam(req, "project");
+
+    User user = session.getUser();
+    Project project = null;
+    try {
+      project = projectManager.getProject(projectName);
+
+      if (project == null) {
+        page.add("errorMsg", "Project " + projectName + " not found.");
+      } else {
+        if (!hasPermission(project, user, Type.READ)) {
+          throw new AccessControlException("No permission to view project "
+                  + projectName + ".");
+        }
+
+        page.add("project", project);
+        List<Flow> flows = project.getFlows();
+        if (!flows.isEmpty()) {
+          Collections.sort(flows, FLOW_ID_COMPARATOR);
+          //page.add("flows", flows);
+          Map<String, Map<String, Object>> gnode = new HashMap<String, Map<String, Object>>();
+          Map<String, Map<String, Object>> gline = new HashMap<String, Map<String, Object>>();
+          for (Flow flow : flows) {
+            page.add("flowid", flow.getId());
+
+            Collection<Node> nodes = flow.getNodes();
+            int left = 60;
+            int top = 60;
+            for (Node node : nodes) {
+              Map<String, Object> attmap = new HashMap<String, Object>();
+              attmap.put("name", "节点_" + node.getId());
+              attmap.put("left", left);
+              attmap.put("top", top);
+              left += 100;
+              top += 50;
+              attmap.put("type", node.getType());
+              attmap.put("width", 86);
+              attmap.put("height", 24);
+              gnode.put(flow.getId() +"_node_" + node.getId(), attmap);
+              //node.get
+            }
+
+            Collection<Edge> edges = flow.getEdges();
+            for (Edge edge : edges) {
+              Map<String, Object> attmap = new HashMap<String, Object>();
+              attmap.put("type", "sl");
+              attmap.put("marked", false);
+              attmap.put("from", flow.getId() +"_node_" + edge.getSourceId());
+              attmap.put("to", flow.getId() +"_node_"+ edge.getTargetId());
+              gline.put(flow.getId() + "_line_" + edge.getId(), attmap);
+            }
+          }
+
+          page.add("gnode", JSONUtils.toJSON(gnode));
+          page.add("gline", JSONUtils.toJSON(gline));
+        }
+      }
+    } catch (AccessControlException e) {
+      page.add("errorMsg", e.getMessage());
+    }
+    page.render();
+  }
+
   private void handleCreate(HttpServletRequest req, HttpServletResponse resp,
-      Session session) throws ServletException {
+                            Session session) throws ServletException {
     String projectName = hasParam(req, "name") ? getParam(req, "name") : null;
     String projectDescription =
-        hasParam(req, "description") ? getParam(req, "description") : null;
+            hasParam(req, "description") ? getParam(req, "description") : null;
     logger.info("Create project " + projectName);
 
     User user = session.getUser();
@@ -1684,8 +1754,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     if (lockdownCreateProjects && !hasPermissionToCreateProject(user)) {
       message =
-          "User " + user.getUserId()
-              + " doesn't have permission to create projects.";
+              "User " + user.getUserId()
+                      + " doesn't have permission to create projects.";
       logger.info(message);
       status = "error";
     } else {
@@ -1712,8 +1782,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void ajaxHandleUpload(HttpServletRequest req,
-      Map<String, String> ret, Map<String, Object> multipart, Session session)
-      throws ServletException, IOException {
+                                Map<String, String> ret, Map<String, Object> multipart, Session session)
+          throws ServletException, IOException {
     User user = session.getUser();
     String projectName = (String) multipart.get("project");
     Project project = projectManager.getProject(projectName);
@@ -1731,10 +1801,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       ret.put("error", "No project name found.");
     } else if (project == null) {
       ret.put("error", "Installation Failed. Project '" + projectName
-          + "' doesn't exist.");
+              + "' doesn't exist.");
     } else if (!hasPermission(project, user, Type.WRITE)) {
       ret.put("error", "Installation Failed. User '" + user.getUserId()
-          + "' does not have write access.");
+              + "' does not have write access.");
     } else {
       ret.put("projectId", String.valueOf(project.getId()));
 
@@ -1744,9 +1814,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
       final String contentType = item.getContentType();
       if (contentType != null
-          && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE)
+              && (contentType.startsWith(APPLICATION_ZIP_MIME_TYPE)
               || contentType.startsWith("application/x-zip-compressed") || contentType
-                .startsWith("application/octet-stream"))) {
+              .startsWith("application/octet-stream"))) {
         type = "zip";
       } else {
         item.delete();
@@ -1765,8 +1835,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         out.close();
 
         Map<String, ValidationReport> reports =
-            projectManager.uploadProject(project, archiveFile, type, user,
-                props);
+                projectManager.uploadProject(project, archiveFile, type, user,
+                        props);
         StringBuffer errorMsgs = new StringBuffer();
         StringBuffer warnMsgs = new StringBuffer();
         for (Entry<String, ValidationReport> reportEntry : reports.entrySet()) {
@@ -1774,20 +1844,20 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           if (!report.getInfoMsgs().isEmpty()) {
             for (String msg : report.getInfoMsgs()) {
               switch (ValidationReport.getInfoMsgLevel(msg)) {
-              case ERROR:
-                errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                break;
-              case WARN:
-                warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
-                break;
-              default:
-                break;
+                case ERROR:
+                  errorMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+                  break;
+                case WARN:
+                  warnMsgs.append(ValidationReport.getInfoMsg(msg) + "<br/>");
+                  break;
+                default:
+                  break;
               }
             }
           }
           if (!report.getErrorMsgs().isEmpty()) {
             errorMsgs.append("Validator " + reportEntry.getKey()
-                + " reports errors:<ul>");
+                    + " reports errors:<ul>");
             for (String msg : report.getErrorMsgs()) {
               errorMsgs.append("<li>" + msg + "</li>");
             }
@@ -1795,7 +1865,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           }
           if (!report.getWarningMsgs().isEmpty()) {
             warnMsgs.append("Validator " + reportEntry.getKey()
-                + " reports warnings:<ul>");
+                    + " reports warnings:<ul>");
             for (String msg : report.getWarningMsgs()) {
               warnMsgs.append("<li>" + msg + "</li>");
             }
@@ -1807,21 +1877,21 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           // message
           // will somehow get discarded.
           ret.put("error",
-              errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000)
-                  : errorMsgs.toString());
+                  errorMsgs.length() > 4000 ? errorMsgs.substring(0, 4000)
+                          : errorMsgs.toString());
         }
         if (warnMsgs.length() > 0) {
           ret.put(
-              "warn",
-              warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs
-                  .toString());
+                  "warn",
+                  warnMsgs.length() > 4000 ? warnMsgs.substring(0, 4000) : warnMsgs
+                          .toString());
         }
       } catch (Exception e) {
         logger.info("Installation Failed.", e);
         String error = e.getMessage();
         if (error.length() > 512) {
           error =
-              error.substring(0, 512) + "<br>Too many errors to display.<br>";
+                  error.substring(0, 512) + "<br>Too many errors to display.<br>";
         }
         ret.put("error", "Installation Failed.<br>" + error);
       } finally {
@@ -1838,8 +1908,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleUpload(HttpServletRequest req, HttpServletResponse resp,
-      Map<String, Object> multipart, Session session) throws ServletException,
-      IOException {
+                            Map<String, Object> multipart, Session session) throws ServletException,
+          IOException {
     HashMap<String, String> ret = new HashMap<String, String>();
     String projectName = (String) multipart.get("project");
     ajaxHandleUpload(req, ret, multipart, session);
@@ -1870,7 +1940,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     private int nextPage;
 
     public PageSelection(String pageName, int size, boolean disabled,
-        boolean selected, int nextPage) {
+                         boolean selected, int nextPage) {
       this.page = pageName;
       this.size = size;
       this.disabled = disabled;
@@ -1904,7 +1974,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private Permission getPermissionObject(Project project, User user,
-      Permission.Type type) {
+                                         Permission.Type type) {
     Permission perm = project.getCollectivePermission(user);
 
     for (String roleName : user.getRoles()) {
@@ -1920,7 +1990,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       Role role = userManager.getRole(roleName);
       Permission perm = role.getPermission();
       if (perm.isPermissionSet(Permission.Type.ADMIN)
-          || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
+              || perm.isPermissionSet(Permission.Type.CREATEPROJECTS)) {
         return true;
       }
     }
@@ -1929,7 +1999,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
   private void handleReloadProjectWhitelist(HttpServletRequest req,
-      HttpServletResponse resp, Session session) throws IOException {
+                                            HttpServletResponse resp, Session session) throws IOException {
     HashMap<String, Object> ret = new HashMap<String, Object>();
 
     if (hasPermission(session.getUser(), Permission.Type.ADMIN)) {
@@ -1938,12 +2008,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           ret.put("success", "Project whitelist re-loaded!");
         } else {
           ret.put("error", "azkaban.properties doesn't contain property "
-              + ProjectWhitelist.XML_FILE_PARAM);
+                  + ProjectWhitelist.XML_FILE_PARAM);
         }
       } catch (Exception e) {
         ret.put("error",
-            "Exception occurred while trying to re-load project whitelist: "
-                + e);
+                "Exception occurred while trying to re-load project whitelist: "
+                        + e);
       }
     } else {
       ret.put("error", "Provided session doesn't have admin privilege.");
@@ -1956,7 +2026,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     for (String roleName : user.getRoles()) {
       Role role = userManager.getRole(roleName);
       if (role.getPermission().isPermissionSet(type)
-          || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
+              || role.getPermission().isPermissionSet(Permission.Type.ADMIN)) {
         return true;
       }
     }

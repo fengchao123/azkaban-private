@@ -26,6 +26,13 @@
     <script type="text/javascript" src="${context}/js/azkaban/view/flow-execute-dialog.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/project.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="${context}/js/gooflow/default.css" />
+    <script type="text/javascript" src="${context}/js/gooflow/GooFunc.js"></script>
+    <link rel="stylesheet" type="text/css" href="${context}/js/gooflow/custom_gooflow.css" />
+    <script type="text/javascript" src="${context}/js/gooflow/custom_gooflow.js"></script>
+
+
     <script type="text/javascript">
       var contextURL = "${context}";
       var currentTime = ${currentTime};
@@ -34,7 +41,6 @@
       var successMessage = null;
 
       var projectId = ${project.id};
-      var execAccess = ${exec};
       var projectName = "$project.name";
     </script>
     <link rel="stylesheet" type="text/css" href="${context}/css/bootstrap-datetimepicker.css" />
@@ -51,60 +57,10 @@
 
   ## Page header.
 
-  #parse ("azkaban/webapp/servlet/velocity/projectpageheader.vm")
+  #parse ("azkaban/webapp/servlet/velocity/projectpageheader2.vm")
 
-    <div class="container-full">
+    #parse ("azkaban/webapp/servlet/velocity/flowgraphview2.vm")
 
-  #parse ("azkaban/webapp/servlet/velocity/alerts.vm")
-
-  ## Page content.
-
-      <div class="row row-offcanvas row-offcanvas-right">
-        <div class="col-xs-12 col-sm-9" id="flow-tabs">
-
-  #set ($project_page = "flows")
-  #parse ("azkaban/webapp/servlet/velocity/projectnav.vm")
-
-            <div id="flow-tabs">
-  #if ($flows)
-    #foreach ($flow in $flows)
-              <div class="panel panel-default" flow="${flow.id}" project="${project.name}">
-                <div class="panel-heading flow-expander" id="${flow.id}">
-      #if (${exec})
-                <div class="pull-right">
-                  <button type="button" class="btn btn-xs btn-success execute-flow" flowId="${flow.id}">Execute Flow</button>
-                  <a href="${context}/manager?project=${project.name}&flow=${flow.id}#executions" class="btn btn-info btn-xs">Executions</a>
-                  <a href="${context}/manager?project=${project.name}&flow=${flow.id}#summary" class="btn btn-info btn-xs">Summary</a>
-                </div>
-      #end
-                <span class="glyphicon glyphicon-chevron-down flow-expander-icon"></span>
-                <a href="${context}/manager?project=${project.name}&flow=${flow.id}">${flow.id}</a>
-              </div>
-              <div id="${flow.id}-child" class="panel-collapse panel-list collapse">
-                <ul class="list-group list-group-collapse expanded-flow-job-list" id="${flow.id}-tbody"></ul>
-              </div>
-            </div>
-    #end
-  #else
-            <div class="callout callout-default">
-              <h4>No Flows</h4>
-              <p>No flows have been uploaded to this project yet.</p>
-            </div>
-  #end
-          </div><!-- /#flow-tabs -->
-        </div><!-- /col-xs-8 -->
-
-        <div class="col-xs-6 col-sm-3 sidebar-offcanvas">
-  #parse ("azkaban/webapp/servlet/velocity/projectsidebar.vm")
-        </div><!-- /col-xs-4 -->
-      </div><!-- /row -->
-
-  #parse ("azkaban/webapp/servlet/velocity/projectmodals.vm")
-  #parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
-  #parse ("azkaban/webapp/servlet/velocity/flowexecutionpanel.vm")
-  #parse ("azkaban/webapp/servlet/velocity/messagedialog.vm")
-
-    </div><!-- /container -->
 #end
   </body>
 </html>
