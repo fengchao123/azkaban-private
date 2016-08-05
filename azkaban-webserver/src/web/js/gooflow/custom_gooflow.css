@@ -102,7 +102,7 @@ v\:group,v\:rect,v\:imagedata,v\:oval,v\:line,v\:polyline,v\:stroke,v\:textbox {
 	width:70px;height:15px;background-color:#D8E8FC;border:#7DA2CE 1px solid;position:absolute;
 	filter:Alpha(Opacity=50);-moz-opacity:0.5;opacity: 0.5;z-index:10000;
 }
-.GooFlow .GooFlow_line_move{filter:Alpha(Opacity=50);-moz-opacity:0.5;opacity:0.5;overflow:hidden;position:absolute;z-index:9999;background:url(0) no-repeat}
+.GooFlow .GooFlow_line_move{filter:Alpha(Opacity=50);-moz-opacity:0.5;opacity:0.5;overflow:hidden;position:absolute;z-index:9999;background:none}
 .GooFlow .GooFlow_line_oper b{display:inline-block;width:15px;height:15px;margin-left:2px;cursor:pointer}
 .GooFlow .b_l1{background:url(images/GooFlow_line_oper.png) no-repeat 1px 1px}
 .GooFlow .b_l2{background:url(images/GooFlow_line_oper.png) no-repeat 1px -14px}
