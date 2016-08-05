@@ -1,0 +1,4 @@
+# B.job
+type=command
+dependencies=A
+command=echo "B job"
