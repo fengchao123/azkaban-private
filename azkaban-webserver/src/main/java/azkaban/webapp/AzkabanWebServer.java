@@ -103,6 +103,8 @@ import azkaban.webapp.servlet.TriggerManagerServlet;
 
 import com.linkedin.restli.server.RestliServlet;
 
+import static azkaban.executor.ExecutorManagerServlet.URL;
+
 /**
  * The Azkaban Jetty server class
  *
@@ -623,7 +625,13 @@ public class AzkabanWebServer extends AzkabanServer {
    */
   private VelocityEngine configureVelocityEngine(final boolean devMode) {
     VelocityEngine engine = new VelocityEngine();
-    engine.setProperty("resource.loader", "classpath, jar");
+//    engine.setProperty("resource.loader", "classpath, jar");
+
+    engine.setProperty("resource.loader", "file");
+    engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_PATH,
+            "/home/feng/azkaban-private/azkaban-webserver/src/main/resources");
+    engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_CACHE,false);
+
     engine.setProperty("classpath.resource.loader.class",
         ClasspathResourceLoader.class.getName());
     engine.setProperty("classpath.resource.loader.cache", !devMode);
