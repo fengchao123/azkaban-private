@@ -72,7 +72,7 @@ $(document).ready(function(){
 
 
 <div id="flow"></div>
-
+<input id="project_name" type="hidden" value="${project.name}"/>
       <div class="modal modal-wide" id="job-edit-pane">
         <div class="modal-dialog">
           <div class="modal-content">

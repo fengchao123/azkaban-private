@@ -24,7 +24,6 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
@@ -58,6 +57,7 @@ public class ProjectManager {
 
   private final String sessionPrefix = "session_";
   private final long max_timediff = 60000l;
+  private final String charSet ="UTF-8";
 
   public ProjectManager(ProjectLoader loader, Props props) {
     this.projectLoader = loader;
@@ -597,21 +597,24 @@ public class ProjectManager {
     return false;
   }
 
-  public List<String> downloadProjectToEdit(Project project, String sessionId) {
+  public List<String> downloadProjectToEdit(Project project, String sessionId) throws IOException {
     List<String> errorMessage = new ArrayList<String>();
+
+
 
     try {
       File newDir = new File(tempDir, project.getId() + "");
-
       //判断是否需要下载
       if (!checkIfNeedDownload(project, sessionId, errorMessage)) {
         return errorMessage;
       }
 
       //如果存在则先删除
-      FileUtils.deleteDirectory(newDir);
-      
-      ProjectFileHandler handler = getProjectFileHandler(project, -1);
+      FileUtils.deleteQuietly(newDir);
+
+      int version = projectLoader.getLatestProjectVersion(project);
+
+      ProjectFileHandler handler = getProjectFileHandler(project, version);
       File zipFile = handler.getLocalFile();
       File oldDir = unzipFile(zipFile);
       handler.deleteLocalFile();
@@ -620,7 +623,14 @@ public class ProjectManager {
       oldDir.renameTo(newDir);
       File sessionFile = new File(newDir.getPath() + "/" + sessionPrefix + sessionId);
       sessionFile.createNewFile();
-    } catch (ProjectManagerException | IOException e) {
+
+      Map<String, Props> properties  = projectLoader.fetchProjectProperties(project.getId(), version);
+      for (String jobName:properties.keySet()) {
+        Props props = properties.get(jobName);
+        setFileProps(project,props,jobName);
+      }
+
+    } catch (ProjectManagerException e) {
       String message = "fail to download project file";
       logger.error(message + ": ", e);
       errorMessage.add(message);
@@ -655,9 +665,24 @@ public class ProjectManager {
   }
 
   private static class PrefixFilter implements FileFilter {
+    private String prefix;
+
+    public PrefixFilter(String prefix) {
+      this.prefix = prefix;
+    }
+
+    @Override
+    public boolean accept(File pathname) {
+      String name = pathname.getName();
+
+      return pathname.isFile() && !pathname.isHidden()
+              && name.length() > prefix.length() && name.startsWith(prefix);
+    }
+  }
+  private static class SuffixFilter implements FileFilter {
     private String suffix;
 
-    public PrefixFilter(String suffix) {
+    public SuffixFilter(String suffix) {
       this.suffix = suffix;
     }
 
@@ -666,16 +691,65 @@ public class ProjectManager {
       String name = pathname.getName();
 
       return pathname.isFile() && !pathname.isHidden()
-              && name.length() > suffix.length() && name.startsWith(suffix);
+              && name.length() > suffix.length() && name.endsWith(suffix);
     }
   }
 
-
-  public String getScriptFile(Project project,String fileName) throws IOException {
+  public String getScriptFile(Project project, String fileName) throws IOException {
     File file = new File(tempDir, project.getId() + "/" + fileName);
-    String  content  = FileUtils.readFileToString(file);
+    String content = FileUtils.readFileToString(file);
     return content;
   }
 
+  public Props getFileProps(Project project, String jobName) throws IOException {
+    if(!jobName.endsWith(".job")){
+      jobName = jobName + ".job";
+    }
+    File file = new File(tempDir, project.getId() + "/" + jobName);
+    if(file.exists()){
+      return new Props(null,file);
+    }
+    return null;
+  }
 
+  public void setFileProps(Project project, Props props, String jobName)
+          throws IOException {
+    StringBuffer fileContent = new StringBuffer();
+    for (String key: props.localKeySet()) {
+      fileContent.append(key).append("=").append(props.get(key)).append("\n");
+    }
+    if(!jobName.endsWith(".job")){
+      jobName = jobName + ".job";
+    }
+    File jobFile = new File(tempDir, project.getId() + "/" + jobName);
+    FileUtils.writeStringToFile(jobFile,fileContent.toString(), charSet);
+  }
+
+  public void saveProject(Project project,User user,Props additionalProps) throws IOException, ProjectManagerException {
+    File projectDir = new File(tempDir, project.getId() + "");
+    File projectDoneDir = new File(tempDir, project.getId() + "_done");
+    projectDir.renameTo(projectDoneDir);
+    File[] files = projectDoneDir.listFiles(new PrefixFilter(sessionPrefix));
+    for (File file : files) {
+      FileUtils.deleteQuietly(file);
+    }
+    File projectFile = new File(tempDir, project.getName()+ ".zip");
+    Utils.zipFolderContent(projectDoneDir, projectFile);
+    FileUtils.deleteQuietly(projectDoneDir);
+    uploadProject(project,
+            projectFile, "zip", user, additionalProps);
+    FileUtils.deleteQuietly(projectFile);
+  }
+
+  public void removeInvalidJobFile(Project project,Set<String> jobNames){
+    File projectDir = new File(tempDir, project.getId() + "");
+    File[] files = projectDir.listFiles(new SuffixFilter(".job"));
+    for (File file:files) {
+      String fileName = file.getName();
+      String name = fileName.substring(0,fileName.lastIndexOf("."));
+      if (!jobNames.contains(name)){
+        FileUtils.deleteQuietly(file);
+      }
+    }
+  }
 }

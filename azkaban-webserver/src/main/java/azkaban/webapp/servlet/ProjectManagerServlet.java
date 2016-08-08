@@ -151,8 +151,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         handleJobPage(req, resp, session);
       } else if (hasParam(req, "flow")) {
         handleFlowPage(req, resp, session);
-      } else if (hasParam(req, "flow2")) {
-        handleFlowPage2(req, resp, session);
       } else if (hasParam(req, "delete")) {
         handleRemoveProject(req, resp, session);
       } else if (hasParam(req, "purge")) {
@@ -205,6 +203,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       String action = getParam(req, "action");
       if (action.equals("create")) {
         handleCreate(req, resp, session);
+      }
+    } else if (hasParam(req, "project")) {
+      if (hasParam(req, "ajax")) {
+        handleAJAXAction(req, resp, session);
       }
     }
   }
@@ -294,14 +296,26 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxFetchJobInfo(project, ret, req);
         }
+      } else if (ajaxName.equals("fetchJobInfo2")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxFetchJobInfo2(project, ret, req, session);
+        }
       } else if (ajaxName.equals("setJobOverrideProperty")) {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
           ajaxSetJobOverrideProperty(project, ret, req);
+        }
+      } else if (ajaxName.equals("setJobOverrideProperty2")) {
+        if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
+          ajaxSetJobOverrideProperty2(project, ret, req);
         }
       } else if (ajaxName.equals("downloadScript")) {
         if (handleAjaxPermission(project, user, Type.READ, ret)) {
           ajaxDownloadScript(project, req, resp, session);
           return;
+        }
+      } else if (ajaxName.equals("saveProject")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxSaveProject(project, ret, req, session);
         }
       } else {
         ret.put("error", "Cannot execute command " + ajaxName);
@@ -324,11 +338,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       for (String msg : errorMessage) {
         writer.write(msg);
       }
-    }else {
+      return;
+    } else {
       String fileContent = projectManager.getScriptFile(project, "scripts/" + fileName);
       writer.write(fileContent);
     }
-
 
 
   }
@@ -758,6 +772,45 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     ret.put("overrideParams", overrideParams);
   }
 
+  private void ajaxFetchJobInfo2(Project project, HashMap<String, Object> ret,
+                                 HttpServletRequest req, Session session) throws ServletException {
+
+
+    String jobName = getParam(req, "jobName");
+    Props prop;
+    try {
+      List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId());
+      if (errorMessage.size() > 0) {
+        ret.put("error", String.join(",", errorMessage));
+        return;
+      }
+      prop = projectManager.getFileProps(project, jobName);
+      if (prop==null){
+        ret.put("newjob","true");
+        return;
+      }
+    } catch (IOException e) {
+      ret.put("error", "Failed to retrieve job properties!");
+      return;
+    }
+
+    Props overrideProp = new Props(prop);
+
+    ret.put("jobName", jobName);
+    ret.put("jobType", prop.get("type"));
+
+    Map<String, String> generalParams = new HashMap<String, String>();
+    Map<String, String> overrideParams = new HashMap<String, String>();
+    for (String ps : prop.getKeySet()) {
+      generalParams.put(ps, prop.getString(ps));
+    }
+    for (String ops : overrideProp.getKeySet()) {
+      overrideParams.put(ops, overrideProp.getString(ops));
+    }
+    ret.put("generalParams", generalParams);
+    ret.put("overrideParams", overrideParams);
+  }
+
   private void ajaxFetchProjectFlows(Project project,
                                      HashMap<String, Object> ret, HttpServletRequest req)
           throws ServletException {
@@ -797,6 +850,23 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     try {
       projectManager.setJobOverrideProperty(project, overrideParams, jobName);
     } catch (ProjectManagerException e) {
+      ret.put("error", "Failed to upload job override property");
+    }
+
+  }
+
+  private void ajaxSetJobOverrideProperty2(Project project,
+                                           HashMap<String, Object> ret, HttpServletRequest req)
+          throws ServletException {
+    String jobName = getParam(req, "jobName");
+
+
+    Map<String, String> jobParamGroup = this.getParamGroup(req, "jobOverride");
+    @SuppressWarnings("unchecked")
+    Props overrideParams = new Props(null, jobParamGroup);
+    try {
+      projectManager.setFileProps(project, overrideParams, jobName);
+    } catch (IOException e) {
       ret.put("error", "Failed to upload job override property");
     }
 
@@ -1557,76 +1627,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     page.render();
   }
 
-  private void handleFlowPage2(HttpServletRequest req, HttpServletResponse resp,
-                               Session session) throws ServletException {
-    Page page =
-            newPage(req, resp, session,
-                    "azkaban/webapp/servlet/velocity/flowpage2.vm");
-    String projectName = getParam(req, "project");
-    String flowName = getParam(req, "flow2");
 
-    User user = session.getUser();
-    Project project = null;
-    Flow flow = null;
-    try {
-      project = projectManager.getProject(projectName);
-      if (project == null) {
-        page.add("errorMsg", "Project " + projectName + " not found.");
-        page.render();
-        return;
-      }
-
-      if (!hasPermission(project, user, Type.READ)) {
-        throw new AccessControlException("No permission Project " + projectName
-                + ".");
-      }
-
-      page.add("project", project);
-
-      flow = project.getFlow(flowName);
-      if (flow == null) {
-        page.add("errorMsg", "Flow " + flowName + " not found.");
-      } else {
-        page.add("flowid", flow.getId());
-
-        Map<String, Map<String, Object>> gnode = new HashMap<String, Map<String, Object>>();
-        Collection<Node> nodes = flow.getNodes();
-        int left = 60;
-        int top = 60;
-        for (Node node : nodes) {
-          Map<String, Object> attmap = new HashMap<String, Object>();
-          attmap.put("name", "节点_" + node.getId());
-          attmap.put("left", left);
-          attmap.put("top", top);
-          left += 100;
-          top += 50;
-          attmap.put("type", node.getType());
-          attmap.put("width", 86);
-          attmap.put("height", 24);
-          gnode.put("flow_node_" + node.getId(), attmap);
-          //node.get
-        }
-        page.add("gnode", JSONUtils.toJSON(gnode));
-
-        Map<String, Map<String, Object>> gline = new HashMap<String, Map<String, Object>>();
-        Collection<Edge> edges = flow.getEdges();
-        for (Edge edge : edges) {
-          Map<String, Object> attmap = new HashMap<String, Object>();
-          attmap.put("type", "sl");
-          attmap.put("marked", false);
-          attmap.put("from", "flow_node_" + edge.getSourceId());
-          attmap.put("to", "flow_node_" + edge.getTargetId());
-          gline.put("flow_line_" + edge.getId(), attmap);
-        }
-
-        page.add("gline", JSONUtils.toJSON(gline));
-      }
-    } catch (AccessControlException e) {
-      page.add("errorMsg", e.getMessage());
-    }
-
-    page.render();
-  }
 
   private void handleProjectPage(HttpServletRequest req,
                                  HttpServletResponse resp, Session session) throws ServletException {
@@ -1714,27 +1715,38 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         page.add("project", project);
         List<Flow> flows = project.getFlows();
         if (!flows.isEmpty()) {
+          List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId());
+          if (errorMessage.size() > 0) {
+            page.add("errorMsg", String.join(",", errorMessage));
+            return;
+          }
+
           Collections.sort(flows, FLOW_ID_COMPARATOR);
           //page.add("flows", flows);
           Map<String, Map<String, Object>> gnode = new HashMap<String, Map<String, Object>>();
           Map<String, Map<String, Object>> gline = new HashMap<String, Map<String, Object>>();
+
           for (Flow flow : flows) {
             page.add("flowid", flow.getId());
 
             Collection<Node> nodes = flow.getNodes();
-            int left = 60;
-            int top = 60;
+
             for (Node node : nodes) {
+              Props props = projectManager.getFileProps(project, node.getJobSource());
+
               Map<String, Object> attmap = new HashMap<String, Object>();
-              attmap.put("name", "节点_" + node.getId());
-              attmap.put("left", left);
-              attmap.put("top", top);
-              left += 100;
-              top += 50;
+              String nodeName = node.getId();
+              if (props.containsKey("showName")) {
+                nodeName = props.get("showName");
+              }
+              attmap.put("name", nodeName);
+              attmap.put("left", props.getInt("left",60));
+              attmap.put("top", props.getInt("top",60));
+
               attmap.put("type", node.getType());
-              attmap.put("width", 86);
-              attmap.put("height", 24);
-              gnode.put(flow.getId() + "_node_" + node.getId(), attmap);
+              attmap.put("width", props.getInt("width",86));
+              attmap.put("height", props.getInt("height",24));
+              gnode.put(projectName + "_node_" + node.getId(), attmap);
               //node.get
             }
 
@@ -1743,9 +1755,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               Map<String, Object> attmap = new HashMap<String, Object>();
               attmap.put("type", "sl");
               attmap.put("marked", false);
-              attmap.put("from", flow.getId() + "_node_" + edge.getSourceId());
-              attmap.put("to", flow.getId() + "_node_" + edge.getTargetId());
-              gline.put(flow.getId() + "_line_" + edge.getId(), attmap);
+              attmap.put("from", projectName + "_node_" + edge.getSourceId());
+              attmap.put("to", projectName + "_node_" + edge.getTargetId());
+              gline.put(projectName + "_line_" + edge.getId().replace(">>","__"), attmap);
             }
           }
 
@@ -1753,11 +1765,57 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           page.add("gline", JSONUtils.toJSON(gline));
         }
       }
-    } catch (AccessControlException e) {
+    } catch (AccessControlException | IOException e) {
       page.add("errorMsg", e.getMessage());
     }
     page.render();
   }
+
+  private void ajaxSaveProject(Project project, HashMap<String, Object> ret, HttpServletRequest req, Session session) throws ServletException {
+    User user = session.getUser();
+    String json = getParam(req, "data");
+
+    try {
+      Map<String, Map<String, Map<String, String>>> jsonMap = (Map<String, Map<String, Map<String, String>>>) JSONUtils.parseJSONFromString(json);
+      Map<String, Map<String, String>> gnodes = jsonMap.get("nodes");
+      Map<String, Map<String, String>> glines = jsonMap.get("lines");
+      Set<String> lineKeyset =  glines.keySet();
+      Set<String> jobNames = new HashSet<String>();
+      for (String gnodeId : gnodes.keySet()) {
+        Map<String, String> nodeparam = gnodes.get(gnodeId);
+        String jobName = gnodeId.split("_node_")[1];
+        jobNames.add(jobName);
+        Props props = projectManager.getFileProps(project,jobName);
+        Props props2 = new Props(null ,nodeparam);
+        props.putAll(props2);
+        Set<String> dependencies = new HashSet<String>();
+        for (String lineKey:lineKeyset) {
+          Map<String, String> gline =  glines.get(lineKey);
+          if (gline.get("to").equals(gnodeId)){
+            String fromNodeId = gline.get("from");
+            String depJobName = fromNodeId.split("_node_")[1];
+            dependencies.add(depJobName);
+          }
+        }
+        if (dependencies.size()>0){
+          props.put("dependencies",String.join(",",dependencies));
+        }else {
+          props.remove("dependencies");
+        }
+
+        projectManager.setFileProps(project,props,jobName);
+      }
+
+      projectManager.removeInvalidJobFile(project,jobNames);
+      projectManager.saveProject(project,user,null);
+      ret.put("msg","保存成功");
+      logger.info("finish");
+    } catch (IOException | ProjectManagerException e) {
+      e.printStackTrace();
+    }
+  }
+
+
 
   private void handleCreate(HttpServletRequest req, HttpServletResponse resp,
                             Session session) throws ServletException {

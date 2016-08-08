@@ -42,8 +42,16 @@ function GooFlow(bgDiv, property) {
         //以下是当工具栏按钮被点击时触发的事件自定义(虚函数),格式为function(),因为可直接用THIS操作对象本身,不用传参；用户可自行重定义:
         this.onBtnNewClick = null;//新建流程图按钮被点中
         this.onBtnOpenClick = null;//打开流程图按钮定义
-        this.onBtnSaveClick = null;//保存流程图按钮定义
+
+        
+        this.onBtnSaveClick = function () {
+            var flowdata = this.exportData();
+            var projectName = $('#project_name').val();
+            jobEditView.saveProject(projectName,flowdata);
+        };//保存流程图按钮定义
+
         this.onFreshClick = null;//重载流程图按钮定义
+
         if (property.headBtns)
             this.$head.on("click", {inthis: this}, function (e) {
                 if (!e)e = window.event;
@@ -140,8 +148,10 @@ function GooFlow(bgDiv, property) {
             var ev = mousePosition(e), t = getElCoordinate(this);
             X = ev.x - t.left + this.parentNode.scrollLeft;
             Y = ev.y - t.top + this.parentNode.scrollTop;
-            e.data.inthis.addNode(e.data.inthis.$id + "_node_" + e.data.inthis.$max, {
-                name: "node_" + e.data.inthis.$max,
+            var projectName = $('#project_name').val();
+            var id=uuid(16, 16);
+            e.data.inthis.addNode(projectName + "_node_" + id, {
+                name: id,
                 left: X,
                 top: Y,
                 type: e.data.inthis.$nowType
@@ -807,41 +817,14 @@ GooFlow.prototype = {
         });
         this.$workArea.delegate(".ico + td", "dblclick", {inthis: this}, function (e) {
             var oldTxt = this.innerHTML;
-            var This = e.data.inthis;
             var id = $(this).parents(".GooFlow_item").attr("id");
-            var fields = id.split("_node_", 2);
-            projectName = "test"
-            var requestURL = contextURL + "/manager";
-            var requestData = {
-                'ajax': 'fetchJobInfo',
-                'project': projectName,
-                'flowName': fields[0],
-                'jobName': fields[1]
-            };
-            jobEditView.show2(projectName, fields[0], fields[1],myCodeMirror)
-
-            var successHandler = function (data) {
-                var type = data.jobType;
-                var mode
-                switch (type) {
-                    case "command":
-                    {
-                        mode = "shell"
-                    }
-                    case "hive":
-                    {
-                        mode = "sql"
-                    }
-                }
-                myCodeMirror.setOption("mode", mode);
-                //myCodeMirror.setValue(data.overrideParams.command);
+            //var fields = id.split("_node_", 2);
+            var projectName = $('#project_name').val();
+            var nodeInfo =  e.data.inthis.getItemInfo(id,"node");
+            jobEditView.show2(projectName,nodeInfo ,myCodeMirror)
 
 
-                $('#node_editor').modal('show');
-                $('.CodeMirror-linenumbers').css("width","29px");
-                $('#node_editor').css("z-index", 10000);
-            };
-            $.get(requestURL, requestData, successHandler, 'json');
+            //$.get(requestURL, requestData, successHandler, 'json');
 
 
 //			var t=getElCoordinate(This.$workArea[0]);
@@ -1799,3 +1782,31 @@ jQuery.extend({
         return new GooFlow(bgDiv, property);
     }
 });
+function uuid(len, radix) {
+    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'.split('');
+    var uuid = [], i;
+    radix = radix || chars.length;
+
+    if (len) {
+        // Compact form
+        for (i = 0; i < len; i++) uuid[i] = chars[0 | Math.random()*radix];
+    } else {
+        // rfc4122, version 4 form
+        var r;
+
+        // rfc4122 requires these characters
+        uuid[8] = uuid[13] = uuid[18] = uuid[23] = '-';
+        uuid[14] = '4';
+
+        // Fill in random data.  At i==19 set the high bits of clock sequence as
+        // per rfc4122, sec. 4.1.5
+        for (i = 0; i < 36; i++) {
+            if (!uuid[i]) {
+                r = 0 | Math.random()*16;
+                uuid[i] = chars[(i == 19) ? (r & 0x3) | 0x8 : r];
+            }
+        }
+    }
+
+    return uuid.join('');
+}

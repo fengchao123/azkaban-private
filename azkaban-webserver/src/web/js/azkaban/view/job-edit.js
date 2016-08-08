@@ -100,14 +100,16 @@ azkaban.JobEditView = Backbone.View.extend({
         $.get(projectURL, fetchJobInfo, fetchJobSuccessHandler, "json");
     },
 
-    show2: function (projectName, flowName, jobName, myCodeMirror) {
+    show2: function (projectName, nodeInfo, myCodeMirror) {
         this.projectName = projectName;
-        this.flowName = flowName;
-        this.jobName = jobName;
+        this.jobName = nodeInfo.name;
+
+        document.getElementById('jobName').innerHTML = this.jobName;
+        document.getElementById('jobType').innerHTML = nodeInfo.type;
 
         var projectURL = this.projectURL
 
-        $('#job-edit-pane').modal();
+        $('.CodeMirror-linenumbers').css("width","29px");
 
         var handleAddRow = this.handleAddRow;
 
@@ -117,14 +119,18 @@ azkaban.JobEditView = Backbone.View.extend({
          this.generalParams = generalParams;*/
         var fetchJobInfo = {
             "project": this.projectName,
-            "ajax": "fetchJobInfo",
-            "flowName": this.flowName,
+            "ajax": "fetchJobInfo2",
             "jobName": this.jobName
         };
         var mythis = this;
         var fetchJobSuccessHandler = function (data) {
             if (data.error) {
                 alert(data.error);
+                return;
+            }
+            if (data.newjob){
+                mythis.newJob(projectName, nodeInfo, myCodeMirror);
+                $('#job-edit-pane').modal();
                 return;
             }
             document.getElementById('jobName').innerHTML = data.jobName;
@@ -160,6 +166,21 @@ azkaban.JobEditView = Backbone.View.extend({
             if(!fileName){
                 return;
             }
+
+            var mode
+            switch (scriptType) {
+                case "command":
+                {
+                    mode = "shell"
+                }
+                case "hive":
+                {
+                    mode = "sql"
+                }
+            }
+            myCodeMirror.setOption("mode", mode);
+
+            
             var downloadScriptInfo = {
                 "project": mythis.projectName,
                 "ajax": "downloadScript",
@@ -173,8 +194,14 @@ azkaban.JobEditView = Backbone.View.extend({
 
         var downloadScriptHandler = function (data) {
             myCodeMirror.setValue(data);
+            $('#job-edit-pane').modal();
         };
 
+    },
+    
+    newJob: function (projectName, nodeInfo, myCodeMirror) {
+        this.overrideParams['type'] = nodeInfo.type;
+        //document.getElementById('jobName').innerHTML = "";
     },
 
     handleSet: function (evt) {
@@ -257,7 +284,7 @@ azkaban.JobEditView = Backbone.View.extend({
             project: project,
             flowName: flowName,
             jobName: jobName,
-            ajax: "setJobOverrideProperty",
+            ajax: "setJobOverrideProperty2",
             jobOverride: jobOverride
         };
 
@@ -267,12 +294,32 @@ azkaban.JobEditView = Backbone.View.extend({
             if (data.error) {
                 alert(data.error);
             }
-            else {
-                window.location = redirectURL;
-            }
+            //else {
+             //   window.location = redirectURL;
+           // }
         };
 
         $.get(projectURL, jobOverrideData, jobOverrideSuccessHandler, "json");
+    },
+
+    saveProject: function (projectName,flowdata) {
+        var projectURL = this.projectURL;
+        this.projectName = projectName;
+        var data = {
+            project: projectName,
+            ajax: "saveProject",
+            data: JSON.stringify(flowdata)
+        };
+        var saveProjectSuccessHandler = function (data) {
+            if (data.error) {
+                alert(data.error);
+            }
+            else {
+                window.location = projectURL + "?project=" +projectName ;
+            }
+        };
+
+        $.post(projectURL, data, saveProjectSuccessHandler, "json");
     },
 
     handleAddRow: function (evt) {
