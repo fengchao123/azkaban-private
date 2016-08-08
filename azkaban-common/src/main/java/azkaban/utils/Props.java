@@ -275,6 +275,9 @@ public class Props {
   public String put(String key, String value) {
     return _current.put(key, value);
   }
+  public void remove(String key) {
+     _current.remove(key);
+  }
 
   /**
    * Put the given Properties into the Props. This method performs any variable
@@ -336,9 +339,24 @@ public class Props {
       return;
     }
 
-    for (Map.Entry<? extends String, ? extends String> entry : m.entrySet()) {
-      this.put(entry.getKey(), entry.getValue());
+    for (String key : m.keySet()) {
+
+      String strValue;
+      Object value =  m.get(key);
+      if (value instanceof Integer)
+      {
+        Integer iValue = (Integer)value;
+        strValue =  iValue.toString();
+      }
+      else {
+        strValue = (String)value;
+      }
+      this.put(key,strValue);
     }
+//    for (Map.Entry<? extends String, ? extends String> entry : m.entrySet()) {
+//      String value = entry.getValue() + "";
+//      this.put(entry.getKey(), value);
+//    }
   }
 
   /**
