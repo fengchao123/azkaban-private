@@ -16,13 +16,7 @@
 
 package azkaban.webapp.servlet;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.Writer;
+import java.io.*;
 import java.security.AccessControlException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -304,12 +298,39 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
           ajaxSetJobOverrideProperty(project, ret, req);
         }
+      } else if (ajaxName.equals("downloadScript")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxDownloadScript(project, req, resp, session);
+          return;
+        }
       } else {
         ret.put("error", "Cannot execute command " + ajaxName);
       }
     }
 
     this.writeJSON(resp, ret);
+  }
+
+  private void ajaxDownloadScript(Project project, HttpServletRequest req,
+                                  HttpServletResponse resp, Session session) throws ServletException, IOException {
+    String fileName = this.getParam(req, "fileName");
+
+    resp.setContentType("text/plain;charset=utf-8");
+
+
+    List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId());
+    PrintWriter writer = resp.getWriter();
+    if (errorMessage.size() > 0) {
+      for (String msg : errorMessage) {
+        writer.write(msg);
+      }
+    }else {
+      String fileContent = projectManager.getScriptFile(project, "scripts/" + fileName);
+      writer.write(fileContent);
+    }
+
+
+
   }
 
   private boolean handleAjaxPermission(Project project, User user, Type type,
@@ -1713,7 +1734,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               attmap.put("type", node.getType());
               attmap.put("width", 86);
               attmap.put("height", 24);
-              gnode.put(flow.getId() +"_node_" + node.getId(), attmap);
+              gnode.put(flow.getId() + "_node_" + node.getId(), attmap);
               //node.get
             }
 
@@ -1722,8 +1743,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               Map<String, Object> attmap = new HashMap<String, Object>();
               attmap.put("type", "sl");
               attmap.put("marked", false);
-              attmap.put("from", flow.getId() +"_node_" + edge.getSourceId());
-              attmap.put("to", flow.getId() +"_node_"+ edge.getTargetId());
+              attmap.put("from", flow.getId() + "_node_" + edge.getSourceId());
+              attmap.put("to", flow.getId() + "_node_" + edge.getTargetId());
               gline.put(flow.getId() + "_line_" + edge.getId(), attmap);
             }
           }

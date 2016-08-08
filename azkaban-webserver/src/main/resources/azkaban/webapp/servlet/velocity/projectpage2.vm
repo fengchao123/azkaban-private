@@ -27,7 +27,7 @@
     <script type="text/javascript" src="${context}/js/azkaban/view/project.js"></script>
     <script type="text/javascript" src="${context}/js/azkaban/view/project-modals.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="${context}/js/gooflow/default.css" />
+    <!--<link rel="stylesheet" type="text/css" href="${context}/js/gooflow/default.css" />-->
     <script type="text/javascript" src="${context}/js/gooflow/GooFunc.js"></script>
     <link rel="stylesheet" type="text/css" href="${context}/js/gooflow/custom_gooflow.css" />
     <script type="text/javascript" src="${context}/js/gooflow/custom_gooflow.js"></script>

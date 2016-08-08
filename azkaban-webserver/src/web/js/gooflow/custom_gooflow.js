@@ -818,7 +818,7 @@ GooFlow.prototype = {
                 'flowName': fields[0],
                 'jobName': fields[1]
             };
-
+            jobEditView.show2(projectName, fields[0], fields[1],myCodeMirror)
 
             var successHandler = function (data) {
                 var type = data.jobType;
@@ -833,9 +833,12 @@ GooFlow.prototype = {
                         mode = "sql"
                     }
                 }
-                myCodeMirror.setOption("mode", "sql");
-                myCodeMirror.setValue(data.overrideParams.command);
+                myCodeMirror.setOption("mode", mode);
+                //myCodeMirror.setValue(data.overrideParams.command);
+
+
                 $('#node_editor').modal('show');
+                $('.CodeMirror-linenumbers').css("width","29px");
                 $('#node_editor').css("z-index", 10000);
             };
             $.get(requestURL, requestData, successHandler, 'json');

@@ -697,7 +697,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     try {
       props =
           projectLoader.fetchProjectProperty(flow.getProjectId(),
-              flow.getVersion(), node.getId() + ".jor");
+              flow.getVersion(), node.getId() + ".job");
     } catch (ProjectManagerException e) {
       e.printStackTrace();
       logger.error("Error loading job override property for job "
