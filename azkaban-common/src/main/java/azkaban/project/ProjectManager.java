@@ -597,15 +597,13 @@ public class ProjectManager {
     return false;
   }
 
-  public List<String> downloadProjectToEdit(Project project, String sessionId) throws IOException {
+  public List<String> downloadProjectToEdit(Project project, String sessionId,boolean force) throws IOException {
     List<String> errorMessage = new ArrayList<String>();
-
-
 
     try {
       File newDir = new File(tempDir, project.getId() + "");
       //判断是否需要下载
-      if (!checkIfNeedDownload(project, sessionId, errorMessage)) {
+      if (!checkIfNeedDownload(project, sessionId, errorMessage,force)) {
         return errorMessage;
       }
 
@@ -615,6 +613,12 @@ public class ProjectManager {
       int version = projectLoader.getLatestProjectVersion(project);
 
       ProjectFileHandler handler = getProjectFileHandler(project, version);
+      if (handler == null){
+        //FileUtils.forceMkdir(newDir);
+        FileUtils.forceMkdir(new File(newDir.getPath() +"/scripts"));
+        FileUtils.forceMkdir(new File(newDir.getPath() +"/files"));
+        return errorMessage;
+      }
       File zipFile = handler.getLocalFile();
       File oldDir = unzipFile(zipFile);
       handler.deleteLocalFile();
@@ -624,7 +628,7 @@ public class ProjectManager {
       File sessionFile = new File(newDir.getPath() + "/" + sessionPrefix + sessionId);
       sessionFile.createNewFile();
 
-      Map<String, Props> properties  = projectLoader.fetchProjectProperties(project.getId(), version);
+      Map<String, Props> properties  = fetchProjectProperties(project, version);
       for (String jobName:properties.keySet()) {
         Props props = properties.get(jobName);
         setFileProps(project,props,jobName);
@@ -638,7 +642,13 @@ public class ProjectManager {
     return errorMessage;
   }
 
-  public boolean checkIfNeedDownload(Project project, String sessionId, List<String> errorMessage) throws IOException {
+  public Map<String, Props> fetchProjectProperties(Project project,int version) throws ProjectManagerException {
+    if (version==-1){
+      version=projectLoader.getLatestProjectVersion(project);
+    }
+    return  projectLoader.fetchProjectProperties(project.getId(), version);
+  }
+  public boolean checkIfNeedDownload(Project project, String sessionId, List<String> errorMessage,boolean force) throws IOException {
     Long currentTime = new Date().getTime();
     File sessionDir = new File(tempDir, project.getId() + "");
     if (!sessionDir.exists())
@@ -649,6 +659,9 @@ public class ProjectManager {
       File sessionFile = files[0];
       //如果是当前session，则更新最后修改时间
       if (sessionFile.getName().replace(sessionPrefix, "").equals(sessionId)) {
+        if (force){
+          return true;
+        }
         sessionFile.setLastModified(currentTime);
         return false;
       }
@@ -658,7 +671,7 @@ public class ProjectManager {
         return true;
       }
 
-      errorMessage.add("另一个会话正在编辑该项目！");
+      errorMessage.add("另一个会话正在编辑该项目，请稍后再试。");
       return false;
     }
     return true;
@@ -700,7 +713,10 @@ public class ProjectManager {
     String content = FileUtils.readFileToString(file);
     return content;
   }
-
+  public void setScriptFile(Project project,String content,String fileName) throws IOException {
+    File file = new File(tempDir, project.getId() + "/" + fileName);
+    FileUtils.writeStringToFile(file,content,charSet);
+  }
   public Props getFileProps(Project project, String jobName) throws IOException {
     if(!jobName.endsWith(".job")){
       jobName = jobName + ".job";
@@ -725,6 +741,7 @@ public class ProjectManager {
     FileUtils.writeStringToFile(jobFile,fileContent.toString(), charSet);
   }
 
+
   public void saveProject(Project project,User user,Props additionalProps) throws IOException, ProjectManagerException {
     File projectDir = new File(tempDir, project.getId() + "");
     File projectDoneDir = new File(tempDir, project.getId() + "_done");
@@ -741,6 +758,17 @@ public class ProjectManager {
     FileUtils.deleteQuietly(projectFile);
   }
 
+  public Set<String>  getProjectFiles(Project project){
+    File projectDir = new File(tempDir, project.getId() + "");
+    File[] files = projectDir.listFiles(new SuffixFilter(".job"));
+    Set<String> jobNames = new HashSet<String>();
+    for (File file:files) {
+      String fileName = file.getName();
+      String name = fileName.substring(0,fileName.lastIndexOf("."));
+      jobNames.add(name);
+    }
+    return jobNames;
+  }
   public void removeInvalidJobFile(Project project,Set<String> jobNames){
     File projectDir = new File(tempDir, project.getId() + "");
     File[] files = projectDir.listFiles(new SuffixFilter(".job"));

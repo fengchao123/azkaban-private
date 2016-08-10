@@ -89,6 +89,8 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   private static final String PROJECT_DOWNLOAD_BUFFER_SIZE_IN_BYTES =
           "project.download.buffer.size";
 
+  private static final String SCRIPTS_DIR = "scripts/";
+
   private ProjectManager projectManager;
   private ExecutorManagerAdapter executorManager;
   private ScheduleManager scheduleManager;
@@ -314,7 +316,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
           return;
         }
       } else if (ajaxName.equals("saveProject")) {
-        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+        if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
           ajaxSaveProject(project, ret, req, session);
         }
       } else {
@@ -332,7 +334,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     resp.setContentType("text/plain;charset=utf-8");
 
 
-    List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId());
+    List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(),false);
     PrintWriter writer = resp.getWriter();
     if (errorMessage.size() > 0) {
       for (String msg : errorMessage) {
@@ -340,7 +342,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       }
       return;
     } else {
-      String fileContent = projectManager.getScriptFile(project, "scripts/" + fileName);
+      String fileContent = projectManager.getScriptFile(project, SCRIPTS_DIR + fileName);
       writer.write(fileContent);
     }
 
@@ -779,14 +781,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String jobName = getParam(req, "jobName");
     Props prop;
     try {
-      List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId());
+      List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(),false);
       if (errorMessage.size() > 0) {
         ret.put("error", String.join(",", errorMessage));
         return;
       }
       prop = projectManager.getFileProps(project, jobName);
-      if (prop==null){
-        ret.put("newjob","true");
+      if (prop == null) {
+        ret.put("newjob", "true");
         return;
       }
     } catch (IOException e) {
@@ -859,6 +861,10 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                                            HashMap<String, Object> ret, HttpServletRequest req)
           throws ServletException {
     String jobName = getParam(req, "jobName");
+    String scriptContent = null;
+    if (hasParam(req, "scriptContent")) {
+      scriptContent = getParam(req, "scriptContent");
+    }
 
 
     Map<String, String> jobParamGroup = this.getParamGroup(req, "jobOverride");
@@ -866,6 +872,28 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     Props overrideParams = new Props(null, jobParamGroup);
     try {
       projectManager.setFileProps(project, overrideParams, jobName);
+      if (scriptContent != null) {
+        String type = jobParamGroup.get("type");
+        String suffix = "";
+        String fileName = null;
+        switch (type) {
+          case "command": {
+            String command = jobParamGroup.get("command");
+            fileName = command.substring(command.lastIndexOf("/") + 1);
+            break;
+          }
+          case "hive":
+            String scriptPath = jobParamGroup.get("hive.script");
+            fileName = scriptPath.substring(scriptPath.lastIndexOf("/") + 1);
+            break;
+        }
+
+        if (fileName == null) {
+          return;
+        }
+
+        projectManager.setScriptFile(project, scriptContent, SCRIPTS_DIR + fileName);
+      }
     } catch (IOException e) {
       ret.put("error", "Failed to upload job override property");
     }
@@ -885,8 +913,25 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     ArrayList<Map<String, Object>> nodeList =
             new ArrayList<Map<String, Object>>();
+    Map<String, Props> propsMap;
+    try {
+      propsMap = projectManager.fetchProjectProperties(project,-1);
+
+    } catch (ProjectManagerException e) {
+      ret.put("error", "Failed to fetch Project Properties");
+      return;
+    }
     for (Node node : flow.getNodes()) {
       HashMap<String, Object> nodeObj = new HashMap<String, Object>();
+      String jobFileName = node.getId() + ".job";
+      String showName=node.getId();
+      if (propsMap.containsKey(jobFileName)){
+        Props props = propsMap.get(jobFileName);
+        if (props.containsKey("showName")){
+          showName = props.get("showName");
+        }
+      }
+      nodeObj.put("showName", showName);
       nodeObj.put("id", node.getId());
       nodeObj.put("type", node.getType());
       if (node.getEmbeddedFlowId() != null) {
@@ -1628,7 +1673,6 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
   }
 
 
-
   private void handleProjectPage(HttpServletRequest req,
                                  HttpServletResponse resp, Session session) throws ServletException {
     Page page =
@@ -1707,24 +1751,25 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (project == null) {
         page.add("errorMsg", "Project " + projectName + " not found.");
       } else {
-        if (!hasPermission(project, user, Type.READ)) {
-          throw new AccessControlException("No permission to view project "
+        if (!hasPermission(project, user, Type.WRITE)) {
+          throw new AccessControlException("No permission to edit project "
                   + projectName + ".");
         }
 
         page.add("project", project);
-        List<Flow> flows = project.getFlows();
-        if (!flows.isEmpty()) {
-          List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId());
-          if (errorMessage.size() > 0) {
-            page.add("errorMsg", String.join(",", errorMessage));
-            return;
-          }
+        List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(),true);
+        if (errorMessage.size() > 0) {
+          page.add("errorMsg", String.join(",", errorMessage));
+          page.render();
+          return;
+        }
 
+        List<Flow> flows = project.getFlows();
+        Map<String, Map<String, Object>> gnode = new HashMap<String, Map<String, Object>>();
+        Map<String, Map<String, Object>> gline = new HashMap<String, Map<String, Object>>();
+        if (!flows.isEmpty()) {
           Collections.sort(flows, FLOW_ID_COMPARATOR);
           //page.add("flows", flows);
-          Map<String, Map<String, Object>> gnode = new HashMap<String, Map<String, Object>>();
-          Map<String, Map<String, Object>> gline = new HashMap<String, Map<String, Object>>();
 
           for (Flow flow : flows) {
             page.add("flowid", flow.getId());
@@ -1740,12 +1785,12 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
                 nodeName = props.get("showName");
               }
               attmap.put("name", nodeName);
-              attmap.put("left", props.getInt("left",60));
-              attmap.put("top", props.getInt("top",60));
+              attmap.put("left", props.getInt("left", 60));
+              attmap.put("top", props.getInt("top", 60));
 
               attmap.put("type", node.getType());
-              attmap.put("width", props.getInt("width",86));
-              attmap.put("height", props.getInt("height",24));
+              attmap.put("width", props.getInt("width", 86));
+              attmap.put("height", props.getInt("height", 24));
               gnode.put(projectName + "_node_" + node.getId(), attmap);
               //node.get
             }
@@ -1757,13 +1802,14 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
               attmap.put("marked", false);
               attmap.put("from", projectName + "_node_" + edge.getSourceId());
               attmap.put("to", projectName + "_node_" + edge.getTargetId());
-              gline.put(projectName + "_line_" + edge.getId().replace(">>","__"), attmap);
+              gline.put(projectName + "_line_" + edge.getId().replace(">>", "__"), attmap);
             }
           }
 
-          page.add("gnode", JSONUtils.toJSON(gnode));
-          page.add("gline", JSONUtils.toJSON(gline));
+
         }
+        page.add("gnode", JSONUtils.toJSON(gnode));
+        page.add("gline", JSONUtils.toJSON(gline));
       }
     } catch (AccessControlException | IOException e) {
       page.add("errorMsg", e.getMessage());
@@ -1779,42 +1825,50 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       Map<String, Map<String, Map<String, String>>> jsonMap = (Map<String, Map<String, Map<String, String>>>) JSONUtils.parseJSONFromString(json);
       Map<String, Map<String, String>> gnodes = jsonMap.get("nodes");
       Map<String, Map<String, String>> glines = jsonMap.get("lines");
-      Set<String> lineKeyset =  glines.keySet();
+      Set<String> lineKeyset = glines.keySet();
       Set<String> jobNames = new HashSet<String>();
+      Set<String> fileNames = projectManager.getProjectFiles(project);
       for (String gnodeId : gnodes.keySet()) {
         Map<String, String> nodeparam = gnodes.get(gnodeId);
         String jobName = gnodeId.split("_node_")[1];
+        //忽略无效的节点
+        if (!fileNames.contains(jobName)) {
+          continue;
+        }
         jobNames.add(jobName);
-        Props props = projectManager.getFileProps(project,jobName);
-        Props props2 = new Props(null ,nodeparam);
+        Props props = projectManager.getFileProps(project, jobName);
+        Props props2 = new Props(null, nodeparam);
         props.putAll(props2);
         Set<String> dependencies = new HashSet<String>();
-        for (String lineKey:lineKeyset) {
-          Map<String, String> gline =  glines.get(lineKey);
-          if (gline.get("to").equals(gnodeId)){
+        for (String lineKey : lineKeyset) {
+          Map<String, String> gline = glines.get(lineKey);
+          if (gline.get("to").equals(gnodeId)) {
             String fromNodeId = gline.get("from");
             String depJobName = fromNodeId.split("_node_")[1];
+            //忽略无效的节点
+            if (!fileNames.contains(depJobName)) {
+              continue;
+            }
             dependencies.add(depJobName);
           }
         }
-        if (dependencies.size()>0){
-          props.put("dependencies",String.join(",",dependencies));
-        }else {
+        if (dependencies.size() > 0) {
+          props.put("dependencies", String.join(",", dependencies));
+        } else {
           props.remove("dependencies");
         }
 
-        projectManager.setFileProps(project,props,jobName);
+        projectManager.setFileProps(project, props, jobName);
       }
 
-      projectManager.removeInvalidJobFile(project,jobNames);
-      projectManager.saveProject(project,user,null);
-      ret.put("msg","保存成功");
+      projectManager.removeInvalidJobFile(project, jobNames);
+      projectManager.saveProject(project, user, null);
+      ret.put("msg", "保存成功");
       logger.info("finish");
     } catch (IOException | ProjectManagerException e) {
       e.printStackTrace();
     }
   }
-
 
 
   private void handleCreate(HttpServletRequest req, HttpServletResponse resp,

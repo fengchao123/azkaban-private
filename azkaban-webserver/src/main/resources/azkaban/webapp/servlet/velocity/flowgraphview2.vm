@@ -26,31 +26,22 @@
 <script src="${context}/js/codemirror/mode/shell/shell.js"></script>
 <script src="${context}/js/codemirror/mode/sql/sql.js"></script>
 <script type="text/javascript" src="${context}/js/azkaban/view/job-edit.js"></script>
-
+<script type="text/javascript" src="${context}/js/azkaban/view/project2.js"></script>
 <script type="text/javascript">
 var property={
 	width:1400,
-	height:500,
-	toolBtns:["start","end","task","node","chat","state","plug","join","fork","complex","command"],
+	height:700,
+	toolBtns:["command","hive","druidIndex"],
 	haveHead:true,
-	headBtns:["new","open","save","undo","redo","reload"],//如果haveHead=true，则定义HEAD区的按钮
+	headBtns:[],//如果haveHead=true，则定义HEAD区的按钮
 	haveTool:true,
 	haveGroup:false,
 	useOperStack:true
 };
 var remark={
 	command:"shell脚本",
-	direct:"转换连线",
-	start:"开始结点",
-	end:"结束结点",
-	shell:"shell结点",
-	node:"自动结点",
-	chat:"决策结点",
-	state:"状态结点",
-	plug:"附加插件",
-	fork:"分支结点",
-	"join":"联合结点",
-	complex:"复合结点"
+    hive:"hive脚本",
+    druidIndex:"druidio作业"
 };
 var flow;
 $(document).ready(function(){
@@ -60,18 +51,21 @@ $(document).ready(function(){
 		return confirm("确定要删除该单元吗?");
 	}
 	jsondata={
-		title:"${flowid}",
+		title:"${project.name}",
 		nodes:${gnode},
 		lines:${gline}
 	};
 	flow.$max=9;
 	flow.loadData(jsondata);
+
 });
 </script>
 
 
-
+<div style="width:1400px;margin-left:auto;margin-right:auto">
 <div id="flow"></div>
+</div>
+
 <input id="project_name" type="hidden" value="${project.name}"/>
       <div class="modal modal-wide" id="job-edit-pane">
         <div class="modal-dialog">

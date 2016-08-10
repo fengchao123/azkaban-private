@@ -36,6 +36,8 @@ function GooFlow(bgDiv, property) {
             tmp += "<a href='javascript:void(0)' class='GooFlow_head_btn'><b class='ico_" + property.headBtns[x] + "'></b></a>"
         }
         tmp += "<span></span></div>";
+
+        tmp="";//去掉头部
         this.$head = $(tmp);
         this.$bgDiv.append(this.$head);
         headHeight = 24;
@@ -817,25 +819,14 @@ GooFlow.prototype = {
         });
         this.$workArea.delegate(".ico + td", "dblclick", {inthis: this}, function (e) {
             var oldTxt = this.innerHTML;
+            var This=e.data.inthis;
             var id = $(this).parents(".GooFlow_item").attr("id");
-            //var fields = id.split("_node_", 2);
+            var fields = id.split("_node_", 2);
             var projectName = $('#project_name').val();
             var nodeInfo =  e.data.inthis.getItemInfo(id,"node");
-            jobEditView.show2(projectName,nodeInfo ,myCodeMirror)
+            jobEditView.show2(projectName,fields[1],nodeInfo ,myCodeMirror,This,id);
+            //This.setName(This.$textArea.data("id"),This.$textArea.val(),"node");
 
-
-            //$.get(requestURL, requestData, successHandler, 'json');
-
-
-//			var t=getElCoordinate(This.$workArea[0]);
-//			This.$textArea.val(oldTxt).css({display:"block",width:$(this).width()+24,height:$(this).height(),
-//				left:t.left+24+This.$nodeData[id].left-This.$workArea[0].parentNode.scrollLeft,
-//				top:t.top+2+This.$nodeData[id].top-This.$workArea[0].parentNode.scrollTop})
-//				.data("id",This.$focus).focus();
-//			This.$workArea.parent().one("mousedown",function(e){
-//				This.setName(This.$textArea.data("id"),This.$textArea.val(),"node");
-//				This.$textArea.val("").removeData("id").hide();
-//			});
         });
         //绑定结点的删除功能
         this.$workArea.delegate(".rs_close", "click", {inthis: this}, function (e) {

@@ -1,11 +1,11 @@
 v\:group,v\:rect,v\:imagedata,v\:oval,v\:line,v\:polyline,v\:stroke,v\:textbox { display:inline-block;background:transparent }
 .GooFlow{
-	background:#D2E1F0 url(images/gooflow_bg.png) repeat-x;border:#99BBE8 1px solid;font: 12px Arial, Helvetica, sans-serif;
+	background:#f0f0f0  repeat-x;border:#f0f0f0 1px solid;font: 12px Arial, Helvetica, sans-serif;
 	-moz-user-select:none;-webkit-user-select:none;
 }
 .GooFlow_head{clear:both;height:22px;padding:1px}
 .GooFlow_head label{
-	font-weight:bold; text-indent:18px;display:block inline;height:14px;margin:2px;border:#B7C8D7 1px solid;border-right:#E9F4FA 1px solid;border-bottom:#E9F4FA 1px solid;padding:1px;width:160px;text-align:center;
+	font-weight:bold; text-indent:18px;display:block inline;height:17px;margin:2px;border:#B7C8D7 1px solid;border-right:#E9F4FA 1px solid;border-bottom:#E9F4FA 1px solid;padding:1px;width:160px;text-align:center;
 	background: url(images/gooflow_icon.png) no-repeat -137px 1px;float:left;color:#15428B;-moz-border-radius:3px; -webkit-border-radius:3px;border-radius:3px;overflow:hidden;
 }
 .GooFlow_head span{float:left;height:22px;width:0px;overflow:hidden;border-left:#9AC6FF 1px solid;border-right:#FFFFFF 1px solid;margin:0px 1px;}
@@ -17,12 +17,12 @@ v\:group,v\:rect,v\:imagedata,v\:oval,v\:line,v\:polyline,v\:stroke,v\:textbox {
 }
 .GooFlow_head_btn:hover b{border:#F6A32D 1px solid;border-top-color:#B1905D;margin:0px;-moz-border-radius:1px; -webkit-border-radius:1px;border-radius:1px;}
 .GooFlow_tool{
-	border:#B7C8D7 1px solid;float:left;margin:0px 3px;overflow:hidden;clear:left;
+	border:#f0f0f0 1px solid;float:left;margin:0px 3px;overflow:hidden;clear:left;
 	-moz-border-radius:3px; -webkit-border-radius:3px;border-radius:3px;
 }
 .GooFlow_tool_div{border:#E9F4FA 1px solid;overflow:hidden;-moz-border-radius:2px; -webkit-border-radius:2px;border-radius:2px;width:24px;}
 
-.GooFlow_tool span{height:0px;overflow:hidden;border-bottom:#9AC6FF 1px solid;border-top:#FFFFFF 1px solid;margin:1px;clear:both;display:block;}
+.GooFlow_tool span{height:0px;overflow:hidden;border-bottom:#f0f0f0 1px solid;border-top:#FFFFFF 1px solid;margin:1px;clear:both;display:block;}
 .GooFlow_tool_btn{display:block;border:0px;height:18px;width:18px;cursor:default;padding:2px;margin:1px;outline:none;blr:expression(this.onFocus=this.blur());}
 .GooFlow_tool_btn b{display:block;overflow:hidden;width:18px;height:18px;border:0px}
 .GooFlow_tool_btn:hover{-moz-border-radius:3px; -webkit-border-radius:3px;border-radius:3px;padding:0px;border:#8E9DA6 1px solid;width:20px;height:20px;}
@@ -37,7 +37,7 @@ v\:group,v\:rect,v\:imagedata,v\:oval,v\:line,v\:polyline,v\:stroke,v\:textbox {
 	border-top-color:#B1905D;margin:0px;-moz-border-radius:2px;-webkit-border-radius:2px;border-radius:2px;
 }
 
-.GooFlow_work{float:right;margin:0px 3px 3px 0px;border:#99B1CE 1px solid;position:relative;overflow:scroll}
+.GooFlow_work{float:right;margin:0px 3px 3px 0px;border:#eeeeee 1px solid;position:relative;overflow:scroll}
 .GooFlow_work .GooFlow_work_inner{background-image:url(images/gooflow_blank.gif);position:relative;overflow:hidden}
 .GooFlow_work .GooFlow_work_group{position:absolute;overflow:hidden;top:0px;left:0px}
 
@@ -65,8 +65,8 @@ v\:group,v\:rect,v\:imagedata,v\:oval,v\:line,v\:polyline,v\:stroke,v\:textbox {
 .GooFlow_work .draw{color:#ff3300}
 
 .GooFlow_item{
-	position:absolute;background:#DDE7F4 url(images/gooflow_btn_bg.png) repeat-x 0px -72px;border:#7DA2CE solid 1px;
-	-moz-border-radius:3px; -webkit-border-radius:3px;border-radius:3px;color:#15428B;background-color:#C1DCFC;
+	position:absolute;background:#f5f5f5  repeat-x 0px -72px;border:#7DA2CE solid 1px;
+	-moz-border-radius:3px; -webkit-border-radius:3px;border-radius:3px;color:#15428B;background-color:#f5f5f5;
 	box-shadow:1px 1px 2px rgba(148,170,194,2);-webkit-box-shadow:1px 1px 2px rgba(148,170,194,2);-moz-box-shadow:1px 1px 2px rgba(148,170,194,2);
 }
 .GooFlow table{border:1px #EBF4FD solid;padding:0px;-moz-border-radius:2px;-webkit-border-radius:2px;border-radius:2px}
@@ -130,4 +130,6 @@ v\:group,v\:rect,v\:imagedata,v\:oval,v\:line,v\:polyline,v\:stroke,v\:textbox {
 .GooFlow .ico_undo{background:url(images/gooflow_icon.png) no-repeat -58px 1px}
 .GooFlow .ico_redo{background:url(images/gooflow_icon.png) no-repeat -78px 1px}
 
-.GooFlow .ico_command{background:url(images/gooflow_icon.png) no-repeat 2px -20px}
+.GooFlow .ico_command{background:url(images/shell_icon.png) no-repeat 0px 0px}
+.GooFlow .ico_hive{background:url(images/hive_icon.png) no-repeat 0px 0px}
+.GooFlow .ico_druidIndex{background:url(images/druidio_icon.png) no-repeat 0px 0px}

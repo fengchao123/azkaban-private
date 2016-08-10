@@ -100,13 +100,25 @@ azkaban.JobEditView = Backbone.View.extend({
         $.get(projectURL, fetchJobInfo, fetchJobSuccessHandler, "json");
     },
 
-    show2: function (projectName, nodeInfo, myCodeMirror) {
-        this.projectName = projectName;
-        this.jobName = nodeInfo.name;
+    show2: function (projectName, jobName, nodeInfo, myCodeMirror,gooflow,nodeid) {
+        //清除配置参数
+        var tbl = document.getElementById("generalProps").tBodies[0];
+        var rows = tbl.rows;
+        var len = rows.length;
+        for (var i = 0; i < len - 1; i++) {
+            tbl.deleteRow(0);
+        }
 
+        this.projectName = projectName;
+        this.jobName = jobName;
+        this.myCodeMirror = myCodeMirror;
+        this.editpanel = $('#job-edit-pane');
+        this.scriptEditor=$("#script_editor");
+        this.gooflow =gooflow;
+        this.nodeid = nodeid;
         document.getElementById('jobName').innerHTML = this.jobName;
         document.getElementById('jobType').innerHTML = nodeInfo.type;
-
+        $(this.editpanel).modal('show');
         var projectURL = this.projectURL
 
         $('.CodeMirror-linenumbers').css("width","29px");
@@ -129,11 +141,15 @@ azkaban.JobEditView = Backbone.View.extend({
                 return;
             }
             if (data.newjob){
-                mythis.newJob(projectName, nodeInfo, myCodeMirror);
-                $('#job-edit-pane').modal();
+                mythis.newJob(projectName, nodeInfo, mythis.myCodeMirror);
+                $(mythis.editpanel).modal('show');
                 return;
             }
-            document.getElementById('jobName').innerHTML = data.jobName;
+            var jobName = data.jobName;
+            if(data.overrideParams.showName){
+                jobName = data.overrideParams.showName;
+            }
+            document.getElementById('jobName').innerHTML = jobName;
             document.getElementById('jobType').innerHTML = data.jobType;
             var generalParams = data.generalParams;
             var overrideParams = data.overrideParams;
@@ -147,40 +163,26 @@ azkaban.JobEditView = Backbone.View.extend({
 
             mythis.overrideParams = overrideParams;
             mythis.generalParams = generalParams;
-
-            for (var okey in overrideParams) {
-                if (okey != 'type' && okey != 'dependencies') {
-                    var row = handleAddRow();
-                    var td = $(row).find('span');
-                    $(td[0]).text(okey);
-                    $(td[1]).text(overrideParams[okey]);
-                }
-            }
+            mythis.fillJobEditPane(overrideParams,mythis.myCodeMirror);
+            $(mythis.editpanel).modal('show');
             var scriptType = overrideParams.type;
-            var fileName="";
+            var fileName;
             if (scriptType == "command") {
                 var reg = /[^\/]*\.sh/g;
-                fileName = overrideParams.command.match(reg);
+                fileName = overrideParams["command"].match(reg);
+            }
+            else if (scriptType == "hive") {
+                var reg = /[^\/]*\.sql/g;
+                fileName = overrideParams["hive.script"].match(reg);
+            }
+            else if (scriptType == "druidIndex") {
+
             }
 
             if(!fileName){
                 return;
             }
 
-            var mode
-            switch (scriptType) {
-                case "command":
-                {
-                    mode = "shell"
-                }
-                case "hive":
-                {
-                    mode = "sql"
-                }
-            }
-            myCodeMirror.setOption("mode", mode);
-
-            
             var downloadScriptInfo = {
                 "project": mythis.projectName,
                 "ajax": "downloadScript",
@@ -194,13 +196,85 @@ azkaban.JobEditView = Backbone.View.extend({
 
         var downloadScriptHandler = function (data) {
             myCodeMirror.setValue(data);
-            $('#job-edit-pane').modal();
+            $(mythis.scriptEditor).css("display","block");
         };
 
     },
     
+    fillJobEditPane: function (overrideParams,myCodeMirror) {
+        var arr = [ "type", "dependencies", "top", "left", "height" , "width" ,"name" ];
+        $.inArray(okey, arr);  //返回 3,
+        for (var okey in overrideParams) {
+            if ($.inArray(okey, arr) == -1) {
+                var row = this.handleAddRow();
+                var td = $(row).find('span');
+                $(td[0]).text(okey);
+                $(td[1]).text(overrideParams[okey]);
+            }
+        }
+        var scriptType = overrideParams.type;
+        var mode
+        switch (scriptType) {
+            case "command":
+            {
+                mode = "shell"
+            }
+            case "hive":
+            {
+                mode = "sql"
+            }
+        }
+        myCodeMirror.setValue("");
+        if(mode){
+            myCodeMirror.setOption("mode", mode);
+            $(this.scriptEditor).css("display","block");
+        }else{
+            $(this.scriptEditor).css("display","none");
+        }
+        myCodeMirror.setOption("mode", mode);
+    },
+    
     newJob: function (projectName, nodeInfo, myCodeMirror) {
-        this.overrideParams['type'] = nodeInfo.type;
+        this.overrideParams={};
+        this.generalParams={};
+
+        var scripttype = nodeInfo.type;
+        this.overrideParams['type'] = scripttype;
+        this.overrideParams['showName']=nodeInfo.name;
+        var nodename = nodeInfo.name;
+        var mode;
+        switch (scripttype){
+            case "command":{
+                this.overrideParams['command']="sh ./scripts/" + nodename + ".sh";
+                mode = "shell";
+                break;
+            }
+
+            case "hive":{
+                this.overrideParams['hive.script']="scripts/" + nodename + ".sql";
+                this.overrideParams['user.to.proxy']="azkaban";
+                mode = "sql";
+                break;
+            }
+            case "druidIndex":{
+                var date = new Date();
+                var time1 = date.format("yyyy-MM-ddThh:mm");
+                date.setDate(date.getDate() - 1)
+                var time2 = date.format("yyyy-MM-ddThh:mm");
+                this.overrideParams['datasourceId']="";
+                this.overrideParams['datasourceName']="";
+                this.overrideParams['segmentGranularity']="DAY";
+                this.overrideParams['intervals']=time1 + "/" + time2;
+                this.overrideParams['paths']="";
+                this.overrideParams['numShards']=1;
+                this.overrideParams['timestampColumn']="timestamp";
+                this.overrideParams['timestampFormat']="millis";
+                break;
+            }
+        }
+
+        this.fillJobEditPane(this.overrideParams,myCodeMirror);
+
         //document.getElementById('jobName').innerHTML = "";
     },
 
@@ -275,7 +349,7 @@ azkaban.JobEditView = Backbone.View.extend({
         if ('dependencies' in overrideParams) {
             jobOverride['dependencies'] = overrideParams['dependencies']
         }
-
+        var script_content =this.myCodeMirror.getValue();
         var project = this.projectName
         var flowName = this.flowName
         var jobName = this.jobName
@@ -285,21 +359,30 @@ azkaban.JobEditView = Backbone.View.extend({
             flowName: flowName,
             jobName: jobName,
             ajax: "setJobOverrideProperty2",
-            jobOverride: jobOverride
+            jobOverride: jobOverride,
+            scriptContent:script_content
         };
 
         var projectURL = this.projectURL
         var redirectURL = projectURL + '?project=' + project + '&edit=1';
+
+        var mythis=this;
         var jobOverrideSuccessHandler = function (data) {
             if (data.error) {
                 alert(data.error);
             }
-            //else {
-             //   window.location = redirectURL;
-           // }
+            else {
+                //window.location = redirectURL;
+                $(mythis.editpanel).modal('hide');
+                var showName = jobName;
+                if(jobOverride["showName"]){
+                    showName=jobOverride["showName"]
+                }
+                mythis.gooflow.setName(mythis.nodeid,showName,"node");
+            }
         };
 
-        $.get(projectURL, jobOverrideData, jobOverrideSuccessHandler, "json");
+        $.post(projectURL, jobOverrideData, jobOverrideSuccessHandler, "json");
     },
 
     saveProject: function (projectName,flowdata) {
