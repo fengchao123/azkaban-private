@@ -19,14 +19,6 @@
 <?import namespace="v" implementation="#default#VML" ?>
 <![endif]-->
 
-<script src="${context}/js/codemirror/lib/codemirror.js"></script>
-<link rel="stylesheet" href="${context}/js/codemirror/lib/codemirror.css">
-<script src="${context}/js/codemirror/keymap/sublime.js"></script>
-
-<script src="${context}/js/codemirror/mode/shell/shell.js"></script>
-<script src="${context}/js/codemirror/mode/sql/sql.js"></script>
-<script type="text/javascript" src="${context}/js/azkaban/view/job-edit.js"></script>
-<script type="text/javascript" src="${context}/js/azkaban/view/project2.js"></script>
 <script type="text/javascript">
 var property={
 	width:1400,

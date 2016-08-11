@@ -16,9 +16,7 @@
 
 package azkaban.project;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +25,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.log4j.Logger;
 
 import azkaban.flow.Flow;
@@ -58,7 +57,7 @@ public class ProjectManager {
   private final String sessionPrefix = "session_";
   private final long max_timediff = 60000l;
   private final String charSet ="UTF-8";
-
+  public static Object lock = new Object();
   public ProjectManager(ProjectLoader loader, Props props) {
     this.projectLoader = loader;
     this.props = props;
@@ -602,13 +601,19 @@ public class ProjectManager {
 
     try {
       File newDir = new File(tempDir, project.getId() + "");
-      //判断是否需要下载
-      if (!checkIfNeedDownload(project, sessionId, errorMessage,force)) {
-        return errorMessage;
-      }
 
-      //如果存在则先删除
-      FileUtils.deleteQuietly(newDir);
+      File sessionFile = new File(newDir.getPath() + "/" + sessionPrefix + sessionId);
+      synchronized(ProjectManager.lock){
+        //判断是否需要下载
+        if (!checkIfNeedDownload(project, sessionId, errorMessage,force)) {
+          return errorMessage;
+        }
+
+        //如果存在则先删除
+        FileUtils.deleteQuietly(newDir);
+        FileUtils.forceMkdir(newDir);
+        FileUtils.touch(sessionFile);
+      }
 
       int version = projectLoader.getLatestProjectVersion(project);
 
@@ -624,9 +629,15 @@ public class ProjectManager {
       handler.deleteLocalFile();
 
       //File newDir = new File(oldDir.getParentFile() + "/" + project.getId());
-      oldDir.renameTo(newDir);
-      File sessionFile = new File(newDir.getPath() + "/" + sessionPrefix + sessionId);
-      sessionFile.createNewFile();
+      for (File file : oldDir.listFiles() ) {
+         File newFile=new File(newDir.getPath() + "/" + file.getName());
+         file.renameTo(newFile);
+      }
+
+      FileUtils.deleteQuietly(oldDir);
+
+      //oldDir.renameTo(newDir);
+      sessionFile.setLastModified(new Date().getTime());
 
       Map<String, Props> properties  = fetchProjectProperties(project, version);
       for (String jobName:properties.keySet()) {
@@ -741,7 +752,32 @@ public class ProjectManager {
     FileUtils.writeStringToFile(jobFile,fileContent.toString(), charSet);
   }
 
+  public void uploadDepFile(Project project,String name ,InputStream in) throws IOException {
+    File archiveFile = new File(tempDir, project.getId() + "/files/" + name);
+    FileUtils.forceMkdir(archiveFile.getParentFile());
+    OutputStream out = null;
+    try {
+      out = new BufferedOutputStream(new FileOutputStream(archiveFile));
+      IOUtils.copy(in, out);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }finally {
+      if (out!=null){
+        out.close();
+      }
+    }
+  }
 
+  public File[] listDepFile(Project project) throws IOException {
+    File archiveFile = new File(tempDir, project.getId() + "/files/");
+    File[] files = archiveFile.listFiles();
+    return files;
+  }
+
+  public void refreshSessionFile(Project project,String sessionId) throws IOException {
+    File sessionFile = new File(tempDir, project.getId() + "/" +sessionPrefix+ sessionId);
+    sessionFile.setLastModified(new Date().getTime());
+  }
   public void saveProject(Project project,User user,Props additionalProps) throws IOException, ProjectManagerException {
     File projectDir = new File(tempDir, project.getId() + "");
     File projectDoneDir = new File(tempDir, project.getId() + "_done");

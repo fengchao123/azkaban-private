@@ -22,8 +22,10 @@
           </div>
           <div class="header-control">
             <div class="header-form pull-right" id="project-options">
-
-              <button id="project-save-btn" class="btn btn-sm btn-primary">
+              <button id="project-files-btn" class="btn btn-sm btn-info">
+                <span class="glyphicon glyphicon-folder-open"></span>  依赖文件
+              </button>
+              <button id="project-save-btn" class="btn btn-sm btn-success">
                 <span class="glyphicon glyphicon-floppy-save"></span> 保存项目
               </button>
 

@@ -761,6 +761,7 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
   private Map<String, Object> getExecutableNodeInfo(ExecutableNode node) {
     HashMap<String, Object> nodeObj = new HashMap<String, Object>();
     nodeObj.put("id", node.getId());
+    nodeObj.put("showName", node.getShowName());
     nodeObj.put("status", node.getStatus());
     nodeObj.put("startTime", node.getStartTime());
     nodeObj.put("endTime", node.getEndTime());

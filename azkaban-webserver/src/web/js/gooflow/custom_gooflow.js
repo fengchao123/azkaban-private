@@ -813,7 +813,7 @@ GooFlow.prototype = {
             });
         });
         var myCodeMirror = CodeMirror(document.getElementById("script_editor"), {
-            mode: "shell",
+            mode : "shell",
             lineNumbers: true,
             keyMap: "sublime"
         });

@@ -19,7 +19,6 @@ package azkaban.webapp.servlet;
 import java.io.*;
 import java.security.AccessControlException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -189,6 +188,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       if (action.equals("upload")) {
         ajaxHandleUpload(req, ret, params, session);
       }
+      if (action.equals("uploadfile")) {
+        ajaxHandleUploadDepFile(req, ret, params, session);
+      }
       this.writeJSON(resp, ret);
     } else if (params.containsKey("action")) {
       String action = (String) params.get("action");
@@ -319,7 +321,15 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
           ajaxSaveProject(project, ret, req, session);
         }
-      } else {
+      }else if (ajaxName.equals("listDepFile")) {
+        if (handleAjaxPermission(project, user, Type.READ, ret)) {
+          ajaxHandleListDepFile(req ,ret);
+        }
+      } else if (ajaxName.equals("heartbeat")) {
+        if (handleAjaxPermission(project, user, Type.WRITE, ret)) {
+          ajaxHandleHeartBeat(req ,ret, session);
+        }
+      }else {
         ret.put("error", "Cannot execute command " + ajaxName);
       }
     }
@@ -334,7 +344,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     resp.setContentType("text/plain;charset=utf-8");
 
 
-    List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(),false);
+    List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(), false);
     PrintWriter writer = resp.getWriter();
     if (errorMessage.size() > 0) {
       for (String msg : errorMessage) {
@@ -781,7 +791,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     String jobName = getParam(req, "jobName");
     Props prop;
     try {
-      List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(),false);
+      List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(), false);
       if (errorMessage.size() > 0) {
         ret.put("error", String.join(",", errorMessage));
         return;
@@ -913,25 +923,11 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
 
     ArrayList<Map<String, Object>> nodeList =
             new ArrayList<Map<String, Object>>();
-    Map<String, Props> propsMap;
-    try {
-      propsMap = projectManager.fetchProjectProperties(project,-1);
 
-    } catch (ProjectManagerException e) {
-      ret.put("error", "Failed to fetch Project Properties");
-      return;
-    }
     for (Node node : flow.getNodes()) {
       HashMap<String, Object> nodeObj = new HashMap<String, Object>();
       String jobFileName = node.getId() + ".job";
-      String showName=node.getId();
-      if (propsMap.containsKey(jobFileName)){
-        Props props = propsMap.get(jobFileName);
-        if (props.containsKey("showName")){
-          showName = props.get("showName");
-        }
-      }
-      nodeObj.put("showName", showName);
+      nodeObj.put("showName", node.getShowName());
       nodeObj.put("id", node.getId());
       nodeObj.put("type", node.getType());
       if (node.getEmbeddedFlowId() != null) {
@@ -1036,6 +1032,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       nodeObj.put("dependencies", dependencies);
       nodeObj.put("dependents", dependents);
       nodeObj.put("level", node.getLevel());
+      nodeObj.put("showName",node.getShowName());
       nodeList.add(nodeObj);
     }
 
@@ -1757,7 +1754,7 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
         }
 
         page.add("project", project);
-        List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(),true);
+        List<String> errorMessage = projectManager.downloadProjectToEdit(project, session.getSessionId(), true);
         if (errorMessage.size() > 0) {
           page.add("errorMsg", String.join(",", errorMessage));
           page.render();
@@ -2039,6 +2036,62 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
       ret.put("version", String.valueOf(project.getVersion()));
     }
   }
+
+  private void ajaxHandleUploadDepFile(HttpServletRequest req,
+                                       Map<String, String> ret, Map<String, Object> multipart, Session session) {
+    User user = session.getUser();
+    String projectName = (String) multipart.get("project");
+    Project project = projectManager.getProject(projectName);
+
+    if (!hasPermission(project, user, Type.WRITE)) {
+      ret.put("error", "Installation Failed. User '" + user.getUserId()
+              + "' does not have write access.");
+    } else {
+      ret.put("projectId", String.valueOf(project.getId()));
+
+      FileItem item = (FileItem) multipart.get("file");
+      String name = item.getName();
+      try {
+        projectManager.uploadDepFile(project, name, item.getInputStream());
+      } catch (IOException e) {
+        ret.put("error", "uploadFile Failed." + e);
+      }
+    }
+  }
+
+  private void ajaxHandleListDepFile(HttpServletRequest req, Map<String, Object> ret) throws ServletException {
+    String projectName =getParam(req,"project");
+    Project project = projectManager.getProject(projectName);
+    ret.put("projectId", String.valueOf(project.getId()));
+
+    try {
+      File[] files = projectManager.listDepFile(project);
+      Set<String> fileNames = new HashSet<String>();
+      if (files!=null){
+        for (File file :files) {
+          fileNames.add(file.getName());
+        }
+      }
+
+      ret.put("fileNames",fileNames);
+    } catch (IOException e) {
+      ret.put("error", "listFile Failed." + e);
+    }
+
+  }
+  private void ajaxHandleHeartBeat(HttpServletRequest req, Map<String, Object> ret, Session session) throws ServletException {
+    String projectName =getParam(req,"project");
+    Project project = projectManager.getProject(projectName);
+    ret.put("projectId", String.valueOf(project.getId()));
+
+    try {
+      projectManager.refreshSessionFile(project,session.getSessionId());
+    } catch (IOException e) {
+      ret.put("error", "handle hearbeat Failed." + e);
+    }
+
+  }
+
 
   private void handleUpload(HttpServletRequest req, HttpServletResponse resp,
                             Map<String, Object> multipart, Session session) throws ServletException,

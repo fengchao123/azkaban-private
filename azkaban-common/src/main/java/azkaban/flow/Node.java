@@ -33,6 +33,7 @@ public class Node {
   private String type;
 
   private String embeddedFlowId;
+  private String showName;
 
   public Node(String id) {
     this.id = id;
@@ -41,7 +42,7 @@ public class Node {
   /**
    * Clones nodes
    *
-   * @param node
+   * @param clone
    */
   public Node(Node clone) {
     this.id = clone.id;
@@ -113,6 +114,11 @@ public class Node {
     return embeddedFlowId;
   }
 
+  public String getShowName(){return showName;}
+
+  public void setShowName(String showName) {
+    this.showName = showName;
+  }
   @SuppressWarnings("unchecked")
   public static Node fromObject(Object obj) {
     Map<String, Object> mapObj = (Map<String, Object>) obj;
@@ -122,12 +128,14 @@ public class Node {
     String jobSource = (String) mapObj.get("jobSource");
     String propSource = (String) mapObj.get("propSource");
     String jobType = (String) mapObj.get("jobType");
+    String showName = (String) mapObj.get("showName");
 
     String embeddedFlowId = (String) mapObj.get("embeddedFlowId");
 
     node.setJobSource(jobSource);
     node.setPropsSource(propSource);
     node.setType(jobType);
+    node.setShowName(showName);
     node.setEmbeddedFlowId(embeddedFlowId);
 
     Integer expectedRuntime = (Integer) mapObj.get("expectedRuntime");
@@ -163,6 +171,7 @@ public class Node {
   public Object toObject() {
     HashMap<String, Object> objMap = new HashMap<String, Object>();
     objMap.put("id", id);
+    objMap.put("showName", showName);
     objMap.put("jobSource", jobSource);
     objMap.put("propSource", propsSource);
     objMap.put("jobType", type);
@@ -181,4 +190,6 @@ public class Node {
 
     return objMap;
   }
+
+
 }

@@ -200,7 +200,13 @@ azkaban.JobEditView = Backbone.View.extend({
         };
 
     },
-    
+
+    show3: function () {
+        var handleAddRow = this.handleAddRow2;
+        //$("#add-btn2").bind("click",handleAddRow);
+        $("#job-files-panel").modal("show");
+    },
+
     fillJobEditPane: function (overrideParams,myCodeMirror) {
         var arr = [ "type", "dependencies", "top", "left", "height" , "width" ,"name" ];
         $.inArray(okey, arr);  //返回 3,
@@ -224,14 +230,14 @@ azkaban.JobEditView = Backbone.View.extend({
                 mode = "sql"
             }
         }
-        myCodeMirror.setValue("");
         if(mode){
             myCodeMirror.setOption("mode", mode);
             $(this.scriptEditor).css("display","block");
         }else{
             $(this.scriptEditor).css("display","none");
         }
-        myCodeMirror.setOption("mode", mode);
+        myCodeMirror.setValue("");
+
     },
     
     newJob: function (projectName, nodeInfo, myCodeMirror) {
@@ -267,7 +273,7 @@ azkaban.JobEditView = Backbone.View.extend({
                 this.overrideParams['intervals']=time1 + "/" + time2;
                 this.overrideParams['paths']="";
                 this.overrideParams['numShards']=1;
-                this.overrideParams['timestampColumn']="timestamp";
+                this.overrideParams['timestampColumn']="ts";
                 this.overrideParams['timestampFormat']="millis";
                 break;
             }
@@ -398,6 +404,7 @@ azkaban.JobEditView = Backbone.View.extend({
                 alert(data.error);
             }
             else {
+                saved = true;
                 window.location = projectURL + "?project=" +projectName ;
             }
         };
@@ -442,6 +449,34 @@ azkaban.JobEditView = Backbone.View.extend({
         return tr;
     },
 
+    handleAddRow2: function (evt) {
+        var tr = document.createElement("tr");
+        var tdValue = document.createElement("td");
+
+        var remove = document.createElement("div");
+        $(remove).addClass("pull-right").addClass('remove-btn');
+        var removeBtn = document.createElement("button");
+        $(removeBtn).attr('type', 'button');
+        $(removeBtn).addClass('btn').addClass('btn-xs').addClass('btn-danger');
+        $(removeBtn).text('删除');
+        $(remove).append(removeBtn);
+
+        var valueData = document.createElement("span");
+        $(valueData).addClass("spanValue");
+
+
+        $(tdValue).append(valueData);
+        $(tdValue).append(remove);
+        $(tdValue).addClass("editable");
+        $(tdValue).addClass("value");
+        valueData.myparent = tdValue;
+
+        $(tr).addClass("editRow");
+        $(tr).append(tdValue);
+
+        $(tr).insertBefore("#addRow_file");
+        return tr;
+    },
     handleEditColumn: function (evt) {
         var curTarget = evt.currentTarget;
         if (this.editingTarget != curTarget) {
