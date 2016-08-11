@@ -53,13 +53,13 @@ subprojects {
    * Gets the version name from the latest Git tag
    */
   task createVersionFile() << {
-    String gitCommitHash = cmdCaller(['git', 'rev-parse', 'HEAD']);
+    //String gitCommitHash = cmdCaller(['git', 'rev-parse', 'HEAD']);
     //String gitRepo = cmdCaller(['git', 'config', '--get', 'remote.origin.url']);
     def date = new Date()
     def formattedDate = date.format('yyyy-MM-dd hh:mm zzz')
 
     String versionStr = version + '\n' +
-        gitCommitHash + '\n' +
+        //gitCommitHash + '\n' +
         //gitRepo + '\n' +
         formattedDate + '\n'
 
