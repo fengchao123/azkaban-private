@@ -16,27 +16,26 @@
 
 package azkaban.user;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
+import azkaban.executor.ExecutorManagerException;
+import azkaban.executor.JdbcExecutorLoader;
+import azkaban.user.User.UserPermissions;
+import azkaban.utils.Props;
 import org.apache.log4j.Logger;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
 import org.xml.sax.SAXException;
 
-import azkaban.user.User.UserPermissions;
-import azkaban.utils.Props;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Xml implementation of the UserManager. Looks for the property
@@ -79,18 +78,18 @@ public class XmlUserManager implements UserManager {
    * @param props
    */
   public XmlUserManager(Props props) {
-    xmlPath = props.getString(XML_FILE_PARAM);
+//    xmlPath = props.getString(XML_FILE_PARAM);
 
-    parseXMLFile();
+    parseXMLFile(props);
   }
 
-  private void parseXMLFile() {
-    File file = new File(xmlPath);
-    if (!file.exists()) {
-      throw new IllegalArgumentException("User xml file " + xmlPath
-          + " doesn't exist.");
-    }
+  private void parseXMLFile(Props props) {
 
+//    File file = new File(xmlPath);
+//    if (!file.exists()) {
+//      throw new IllegalArgumentException("User xml file " + xmlPath
+//          + " doesn't exist.");
+//    }
     HashMap<String, User> users = new HashMap<String, User>();
     HashMap<String, String> userPassword = new HashMap<String, String>();
     HashMap<String, Role> roles = new HashMap<String, Role>();
@@ -99,6 +98,29 @@ public class XmlUserManager implements UserManager {
     HashMap<String, Set<String>> proxyUserMap =
         new HashMap<String, Set<String>>();
 
+    /******begin*******modify 从数据库获取人员信息，不从xml文件读取***********************/
+    JdbcUserLoader jdbcUserLoader = new JdbcUserLoader(props);
+
+    try {
+//      //get user
+//      users = jdbcUserLoader.queryAllUser();
+      //get roles
+      roles = jdbcUserLoader.queryRole();
+      //get group
+      groupRoles = jdbcUserLoader.queryGroup();
+
+      //get user
+      List<HashMap>  list = jdbcUserLoader.queryAllUserAnd();
+
+      users = list.get(0);
+      userPassword = (HashMap<String, String>) list.get(1);
+      proxyUserMap = (HashMap<String, Set<String>>) list.get(2);
+    } catch (UserManagerException e) {
+      e.printStackTrace();
+    }
+
+/******end*******modify 从数据库获取人员信息，不从xml文件读取***********************/
+    /***** 注释解析xml获取人员信息方法
     // Creating the document builder to parse xml.
     DocumentBuilderFactory docBuilderFactory =
         DocumentBuilderFactory.newInstance();
@@ -139,7 +161,7 @@ public class XmlUserManager implements UserManager {
         }
       }
     }
-
+     *********/
     // Synchronize the swap. Similarly, the gets are synchronized to this.
     synchronized (this) {
       this.users = users;
@@ -250,37 +272,47 @@ public class XmlUserManager implements UserManager {
   @Override
   public User getUser(String username, String password)
       throws UserManagerException {
-    if (username == null || username.trim().isEmpty()) {
-      throw new UserManagerException("Username is empty.");
+     if (username == null || username.trim().isEmpty()) {
+//      throw new UserManagerException("Username is empty.");
+       throw new UserManagerException("用户名不能为空");
     } else if (password == null || password.trim().isEmpty()) {
-      throw new UserManagerException("Password is empty.");
+//      throw new UserManagerException("Password is empty.");
+       throw new UserManagerException("密码不能为空");
     }
-
     // Minimize the synchronization of the get. Shouldn't matter if it
     // doesn't exist.
     String foundPassword = null;
     User user = null;
     synchronized (this) {
-      foundPassword = userPassword.get(username);
-      if (foundPassword != null) {
-        user = users.get(username);
-      }
+//      foundPassword = userPassword.get(username);
+
+//      if (foundPassword != null) {
+//        user = users.get(username);
+//      }
+      //modify feng 用户名密码都从人员信息里面获取
+      user = users.get(username);
     }
 
-    if (foundPassword == null || !foundPassword.equals(password)) {
-      throw new UserManagerException("Username/Password not found.");
-    }
     // Once it gets to this point, no exception has been thrown. User
     // shoudn't be
     // null, but adding this check for if user and user/password hash tables
     // go
     // out of sync.
     if (user == null) {
-      throw new UserManagerException("Internal error: User not found.");
+      throw new UserManagerException("用户名不存在");
+//      throw new UserManagerException("Internal error: User not found.");
+    }else {
+
+      foundPassword = user.getPassword();
+    }
+
+    if (foundPassword == null || !foundPassword.equals(password)) {
+//      throw new UserManagerException("Username/Password not found.");
+      throw new UserManagerException("用户名或密码错误");
     }
 
     // Add all the roles the group has to the user
-    resolveGroupRoles(user);
+//    resolveGroupRoles(user);
     user.setPermissions(new UserPermissions() {
       @Override
       public boolean hasPermission(String permission) {
@@ -343,7 +375,11 @@ public class XmlUserManager implements UserManager {
   @Override
   public boolean validateGroup(String group) {
     // Return true. Validation should be added when groups are added to the xml.
-    return true;
+//    return true;
+//    boolean bool = true;
+//    bool = groupRoles.containsKey(group);
+    //modify  增加对group校验
+    return groupRoles.containsKey(group);
   }
 
   @Override
@@ -355,4 +391,5 @@ public class XmlUserManager implements UserManager {
       return false;
     }
   }
+
 }

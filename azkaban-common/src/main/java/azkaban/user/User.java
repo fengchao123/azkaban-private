@@ -24,7 +24,9 @@ import java.util.Set;
 
 public class User {
   private final String userid;
+  private  String password;
   private String email = "";
+  private String lxdh;
   private Set<String> roles = new HashSet<String>();
   private Set<String> groups = new HashSet<String>();
   private UserPermissions userPermissions;
@@ -33,6 +35,22 @@ public class User {
 
   public User(String userid) {
     this.userid = userid;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public String getLxdh() {
+    return lxdh;
+  }
+
+  public void setLxdh(String lxdh) {
+    this.lxdh = lxdh;
   }
 
   public String getUserId() {

@@ -375,7 +375,8 @@ public abstract class LoginAbstractAzkabanServlet extends
       try {
         session = createSession(req);
       } catch (UserManagerException e) {
-        ret.put("error", "Incorrect Login. " + e.getMessage());
+//        ret.put("error", "Incorrect Login. " + e.getMessage());
+        ret.put("error", "错误提示："+ e.getMessage());
         return;
       }
 
@@ -386,7 +387,8 @@ public abstract class LoginAbstractAzkabanServlet extends
       ret.put("status", "success");
       ret.put("session.id", session.getSessionId());
     } else {
-      ret.put("error", "Incorrect Login.");
+      ret.put("error", "登陆错误：");
+//      ret.put("error", "Incorrect Login.");
     }
   }
 
