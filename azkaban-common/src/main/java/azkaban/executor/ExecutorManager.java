@@ -427,10 +427,6 @@ public class ExecutorManager extends EventHandler implements
     return ports;
   }
 
-  private void loadRunningFlows() throws ExecutorManagerException {
-    runningFlows.putAll(executorLoader.fetchActiveFlows());
-  }
-
   /*
    * load queued flows i.e with active_execution_reference and not assigned to
    * any executor
@@ -443,6 +439,10 @@ public class ExecutorManager extends EventHandler implements
         queuedFlows.enqueue(pair.getSecond(), pair.getFirst());
       }
     }
+  }
+
+  private void loadRunningFlows() throws ExecutorManagerException {
+    runningFlows.putAll(executorLoader.fetchActiveFlows());
   }
 
   /**

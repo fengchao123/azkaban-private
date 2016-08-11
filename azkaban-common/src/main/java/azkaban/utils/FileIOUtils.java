@@ -16,21 +16,12 @@
 
 package azkaban.utils;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileFilter;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.io.*;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import azkaban.utils.parser.ExprSupport;
 import org.apache.commons.io.IOUtils;
 
 /**
@@ -38,6 +29,8 @@ import org.apache.commons.io.IOUtils;
  * future.
  */
 public class FileIOUtils {
+
+  private static Pattern pattern = Pattern.compile("\\$\\{ *([^}]+) *}");
 
   public static class PrefixSuffixFileFilter implements FileFilter {
     private String prefix;
@@ -66,8 +59,8 @@ public class FileIOUtils {
 
   public static String getSourcePathFromClass(Class<?> containedClass) {
     File file =
-        new File(containedClass.getProtectionDomain().getCodeSource()
-            .getLocation().getPath());
+            new File(containedClass.getProtectionDomain().getCodeSource()
+                    .getLocation().getPath());
 
     if (!file.isDirectory() && file.getName().endsWith(".class")) {
       String name = containedClass.getName();
@@ -79,7 +72,7 @@ public class FileIOUtils {
       return file.getPath();
     } else {
       return containedClass.getProtectionDomain().getCodeSource().getLocation()
-          .getPath();
+              .getPath();
     }
   }
 
@@ -87,13 +80,13 @@ public class FileIOUtils {
    * Run a unix command that will symlink files, and recurse into directories.
    */
   public static void createDeepSymlink(File sourceDir, File destDir)
-      throws IOException {
+          throws IOException {
     if (!sourceDir.exists()) {
       throw new IOException("Source directory " + sourceDir.getPath()
-          + " doesn't exist");
+              + " doesn't exist");
     } else if (!destDir.exists()) {
       throw new IOException("Destination directory " + destDir.getPath()
-          + " doesn't exist");
+              + " doesn't exist");
     } else if (sourceDir.isFile() && destDir.isFile()) {
       throw new IOException("Source or Destination is not a directory.");
     }
@@ -102,12 +95,25 @@ public class FileIOUtils {
     createDirsFindFiles(sourceDir, sourceDir, destDir, paths);
 
     StringBuffer buffer = new StringBuffer();
+    File scriptPath;
     for (String path : paths) {
       File sourceLink = new File(sourceDir, path);
       path = "." + path;
 
-      buffer.append("ln -s ").append(sourceLink.getAbsolutePath()).append("/*")
-          .append(" ").append(path).append(";");
+      //path format: . or ./flowName/***
+      //end with scripts, cp files
+      //if coontains scripts not start with it, it must because flowName=scripts
+      //or only contain scripts,may like './flowName/scripts/tmp'
+      if (path.endsWith("/scripts")) {
+        buffer.append("cp -R ").append(sourceLink.getAbsolutePath()).append("/*")
+                .append(" ").append(path).append(";");
+        scriptPath = new File(destDir, path);
+      } else if (path.contains("/scripts/") && !path.startsWith("./scripts/")) {
+        continue;
+      } else {
+        buffer.append("ln -s ").append(sourceLink.getAbsolutePath()).append("/*")
+                .append(" ").append(path).append(";");
+      }
     }
 
     String command = buffer.toString();
@@ -145,8 +151,82 @@ public class FileIOUtils {
     }
   }
 
+  public static void parseScriptFileParameters(File executionDir, Map<String, String> props)
+          throws IOException {
+    if (!executionDir.exists()) {
+      throw new IOException("Source directory " + executionDir.getPath()
+              + " doesn't exist");
+    } else if (executionDir.isFile()) {
+      throw new IOException("executionDir is not a directory.");
+    }
+
+    File[] srcList = executionDir.listFiles();
+    File scriptPath = null;
+    for (File file : srcList) {
+      if (file.isDirectory() && file.getName().equals("scripts")) {
+        scriptPath = file;
+        break;
+      }
+    }
+
+    List<File> scriptFiles = new ArrayList<>();
+
+    getAllScripts(scriptPath, scriptFiles);
+
+    for (File file : scriptFiles) {
+      parseFileParameters(file, props);
+    }
+  }
+
+  private static void parseFileParameters(File file, Map<String, String> props) throws IOException {
+    FileReader in = new FileReader(file);
+    BufferedReader bufIn = new BufferedReader(in);
+    // 内存流, 作为临时流
+    CharArrayWriter tempStream = new CharArrayWriter();
+    // 替换
+    String line = null;
+    while ((line = bufIn.readLine()) != null) {
+      // 替换每行中, 符合条件的字符串
+      line = parseLineParameters(line, props);
+      // 将该行写入内存
+      tempStream.write(line);
+      // 添加换行符
+      tempStream.append(System.getProperty("line.separator"));
+    }
+
+    // 关闭 输入流
+    bufIn.close();
+    // 将内存中的流 写入 文件
+    FileWriter out = new FileWriter(file);
+    tempStream.writeTo(out);
+    out.close();
+  }
+
+  private static String parseLineParameters(String line, Map<String, String> props) {
+    StringBuffer lineBuf = new StringBuffer(line.length());
+    Matcher matcher = pattern.matcher(line);
+    while (matcher.find()) {
+      String key = matcher.group(1).trim();
+      String value = ExprSupport.parseExpr(key, props);
+      matcher.appendReplacement(lineBuf, value);
+    }
+    matcher.appendTail(lineBuf);
+    return lineBuf.toString();
+  }
+
+  private static void getAllScripts(File scriptPath, List<File> scriptFiles) {
+    File[] list = scriptPath.listFiles();
+    for (File file : list) {
+      if (file.isFile()) {
+        scriptFiles.add(file);
+      } else {
+        getAllScripts(file, scriptFiles);
+      }
+    }
+  }
+
   private static void createDirsFindFiles(File baseDir, File sourceDir,
-      File destDir, Set<String> paths) {
+                                          File destDir, Set<String> paths) {
     File[] srcList = sourceDir.listFiles();
     String path = getRelativePath(baseDir, sourceDir);
     paths.add(path);
@@ -198,7 +278,7 @@ public class FileIOUtils {
   }
 
   public static Pair<Integer, Integer> readUtf8File(File file, int offset,
-      int length, OutputStream stream) throws IOException {
+                                                    int length, OutputStream stream) throws IOException {
     byte[] buffer = new byte[length];
 
     FileInputStream fileStream = new FileInputStream(file);
@@ -221,11 +301,11 @@ public class FileIOUtils {
     stream.write(buffer, utf8Range.getFirst(), utf8Range.getSecond());
 
     return new Pair<Integer, Integer>(offset + utf8Range.getFirst(),
-        utf8Range.getSecond());
+            utf8Range.getSecond());
   }
 
   public static LogData readUtf8File(File file, int fileOffset, int length)
-      throws IOException {
+          throws IOException {
     byte[] buffer = new byte[length];
     FileInputStream fileStream = new FileInputStream(file);
 
@@ -249,14 +329,14 @@ public class FileIOUtils {
     }
     Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
     String outputString =
-        new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
+            new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
 
     return new LogData(fileOffset + utf8Range.getFirst(),
-        utf8Range.getSecond(), outputString);
+            utf8Range.getSecond(), outputString);
   }
 
   public static JobMetaData readUtf8MetaDataFile(File file, int fileOffset,
-      int length) throws IOException {
+                                                 int length) throws IOException {
     byte[] buffer = new byte[length];
     FileInputStream fileStream = new FileInputStream(file);
 
@@ -280,17 +360,17 @@ public class FileIOUtils {
     }
     Pair<Integer, Integer> utf8Range = getUtf8Range(buffer, 0, read);
     String outputString =
-        new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
+            new String(buffer, utf8Range.getFirst(), utf8Range.getSecond());
 
     return new JobMetaData(fileOffset + utf8Range.getFirst(),
-        utf8Range.getSecond(), outputString);
+            utf8Range.getSecond(), outputString);
   }
 
   /**
    * Returns first and length.
    */
   public static Pair<Integer, Integer> getUtf8Range(byte[] buffer, int offset,
-      int length) {
+                                                    int length) {
     int start = getUtf8ByteStart(buffer, offset);
     int end = getUtf8ByteEnd(buffer, offset + length - 1);
 
@@ -433,7 +513,7 @@ public class FileIOUtils {
     }
 
     public static JobMetaData createJobMetaDataFromObject(
-        Map<String, Object> map) {
+            Map<String, Object> map) {
       int offset = (Integer) map.get("offset");
       int length = (Integer) map.get("length");
       String data = (String) map.get("data");
@@ -445,5 +525,14 @@ public class FileIOUtils {
     public String toString() {
       return "[offset=" + offset + ",length=" + length + ",data=" + data + "]";
     }
+
+  }
+
+  public static void main(String[] args) throws IOException {
+    File file = new File("/tmp/script.bak");
+    Map<String, String> map = new HashMap<>();
+    map.put("name", "janpy");
+    map.put("age", "100");
+    parseFileParameters(file, map);
   }
 }
