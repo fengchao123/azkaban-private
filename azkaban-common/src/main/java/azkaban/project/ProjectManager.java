@@ -55,7 +55,7 @@ public class ProjectManager {
   private final boolean creatorDefaultPermissions;
 
   private final String sessionPrefix = "session_";
-  private final long max_timediff = 60000l;
+  private final long max_timediff = 60000L;
   private final String charSet ="UTF-8";
   public static Object lock = new Object();
   public ProjectManager(ProjectLoader loader, Props props) {
