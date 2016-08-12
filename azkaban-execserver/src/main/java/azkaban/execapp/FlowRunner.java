@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
+import azkaban.utils.FileIOUtils;
+import azkaban.utils.parser.ExprSupport;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -677,6 +679,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     node.setInputProps(props);
+    FileIOUtils.parseScriptFileParameters(execDir, props.getMapByPrefix(""));
   }
 
   /**
