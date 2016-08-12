@@ -103,7 +103,13 @@ azkaban.SvgGraphView = Backbone.View.extend({
 
     // Assign labels
     for (var i = 0; i < nodes.length; ++i) {
-      nodes[i].label = nodes[i].id;
+      if (nodes[i].showName){
+        nodes[i].label = nodes[i].showName;
+      }
+      else{
+        nodes[i].label = nodes[i].id;
+      }
+
     }
 
     var self = this;

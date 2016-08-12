@@ -46,7 +46,7 @@
 
     <div class="az-page-header">
       <div class="container-full">
-        <h1><a href="${context}/executor">Executing Flows</a></h1>
+        <h1><a href="${context}/executor">正在执行的工作流</a></h1>
       </div>
     </div>
 
@@ -113,7 +113,7 @@
   #end
 #else
               <tr>
-                <td colspan="10">No Executing Flows</td>
+                <td colspan="10">无正在执行的工作流</td>
               </tr>
 #end
             </tbody>

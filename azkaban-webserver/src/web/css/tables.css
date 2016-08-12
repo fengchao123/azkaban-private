@@ -1,0 +1,102 @@
+table.table-properties {
+  table-layout: fixed;
+  word-wrap: break-word;
+}
+.property-key {
+  width: 25%;
+  font-weight: bold;
+}
+.property-value-half {
+  width: 25%;
+}
+.property-key pre,
+.property-value pre,
+.property-value-half pre {
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+.editable .remove-btn {
+  visibility: hidden;
+}
+.editable:hover .remove-btn {
+  visibility: visible;
+}
+.editable_file .remove_file-btn {
+  visibility: hidden;
+}
+.editable_file:hover .remove_file-btn {
+  visibility: visible;
+}
+#all-jobs .tb-name {
+  width: 70%;
+  border-bottom-width: 0;
+  border-bottom-style: none;
+}
+#all-jobs .tb-up-date {
+  width: 140px;
+  min-width: 130px;
+}
+#all-jobs .tb-owner {
+  width: 10%;
+  min-width: 95px;
+}
+.executions-table tr.expanded {
+  opacity: 0.6;
+}
+.executions-table td.subflowrow {
+  padding: 0px 0px;
+}
+.executions-table td.subflowrow table {
+  margin: 0px;
+  background-color: rgba(230, 230, 230, 0.75);
+}
+.executions-table td.subflowrow table td {
+  background-color: none;
+}
+.executions-table td.date {
+  width: 160px;
+}
+.executions-table td.jobtype {
+  width: 90px;
+}
+.executions-table td.execid {
+  width: 100px;
+}
+.executions-table td.project {
+  width: 200px;
+}
+.executions-table td.user {
+  width: 60px;
+}
+.executions-table td.elapse {
+  width: 90px;
+}
+.executions-table td.statustd {
+  width: 100px;
+}
+.executions-table td.details {
+  width: 10px;
+}
+.executions-table td.action {
+  width: 20px;
+}
+.executions-table td.logs {
+  width: 30px;
+}
+.executions-table td.timeline {
+  width: 280px;
+  padding: 0px 0px 0px 4px;
+  height: 100%;
+  vertical-align: bottom;
+  margin: 0px;
+}
+.executions-table td.startTime {
+  width: 160px;
+}
+.executions-table td.endTime {
+  width: 160px;
+}
+.executions-table td.elapsedTime {
+  width: 90px;
+}

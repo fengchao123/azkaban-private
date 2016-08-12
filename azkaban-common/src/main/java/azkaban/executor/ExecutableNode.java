@@ -35,6 +35,7 @@ import azkaban.utils.TypedMapWrapper;
  */
 public class ExecutableNode {
   public static final String ID_PARAM = "id";
+  public static final String SHOWNAME_PARAM = "showName";
   public static final String STATUS_PARAM = "status";
   public static final String STARTTIME_PARAM = "startTime";
   public static final String ENDTIME_PARAM = "endTime";
@@ -46,7 +47,9 @@ public class ExecutableNode {
   public static final String JOB_SOURCE_PARAM = "jobSource";
   public static final String OUTPUT_PROPS_PARAM = "outputProps";
 
+
   private String id;
+  private String showName;
   private String type = null;
   private Status status = Status.READY;
   private long startTime = -1;
@@ -77,16 +80,18 @@ public class ExecutableNode {
     this.id = node.getId();
     this.jobSource = node.getJobSource();
     this.propsSource = node.getPropsSource();
+    this.showName = node.getShowName();
   }
 
   public ExecutableNode(Node node, ExecutableFlowBase parent) {
-    this(node.getId(), node.getType(), node.getJobSource(), node
+    this(node.getId(),node.getShowName(), node.getType(), node.getJobSource(), node
         .getPropsSource(), parent);
   }
 
-  public ExecutableNode(String id, String type, String jobSource,
+  public ExecutableNode(String id,String showName, String type, String jobSource,
       String propsSource, ExecutableFlowBase parent) {
     this.id = id;
+    this.showName = showName;
     this.jobSource = jobSource;
     this.propsSource = propsSource;
     this.type = type;
@@ -118,6 +123,14 @@ public class ExecutableNode {
 
   public void setId(String id) {
     this.id = id;
+  }
+
+  public String getShowName() {
+    return showName;
+  }
+
+  public void setShowName(String showName) {
+    this.showName = showName;
   }
 
   public Status getStatus() {
@@ -277,6 +290,7 @@ public class ExecutableNode {
 
   protected void fillMapFromExecutable(Map<String, Object> objMap) {
     objMap.put(ID_PARAM, this.id);
+    objMap.put(SHOWNAME_PARAM, this.showName);
     objMap.put(STATUS_PARAM, status.toString());
     objMap.put(STARTTIME_PARAM, startTime);
     objMap.put(ENDTIME_PARAM, endTime);
@@ -316,6 +330,7 @@ public class ExecutableNode {
   public void fillExecutableFromMapObject(
       TypedMapWrapper<String, Object> wrappedMap) {
     this.id = wrappedMap.getString(ID_PARAM);
+    this.showName = wrappedMap.getString(SHOWNAME_PARAM);
     this.type = wrappedMap.getString(TYPE_PARAM);
     this.status = Status.valueOf(wrappedMap.getString(STATUS_PARAM));
     this.startTime = wrappedMap.getLong(STARTTIME_PARAM);
@@ -362,6 +377,7 @@ public class ExecutableNode {
   public Map<String, Object> toUpdateObject() {
     Map<String, Object> updatedNodeMap = new HashMap<String, Object>();
     updatedNodeMap.put(ID_PARAM, getId());
+    updatedNodeMap.put(SHOWNAME_PARAM, getShowName());
     updatedNodeMap.put(STATUS_PARAM, getStatus().getNumVal());
     updatedNodeMap.put(STARTTIME_PARAM, getStartTime());
     updatedNodeMap.put(ENDTIME_PARAM, getEndTime());

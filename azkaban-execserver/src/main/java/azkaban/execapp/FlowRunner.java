@@ -31,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
 
+import azkaban.utils.FileIOUtils;
+import azkaban.utils.parser.ExprSupport;
 import org.apache.log4j.Appender;
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Layout;
@@ -74,6 +76,9 @@ public class FlowRunner extends EventHandler implements Runnable {
   // We check update every 5 minutes, just in case things get stuck. But for the
   // most part, we'll be idling.
   private static final long CHECK_WAIT_MS = 5 * 60 * 1000;
+  private static final String PROPERTY_SUFFIX = ".properties";
+  private static final String BUSINESS_TIME = "business.time";
+  private static final String SCRIPT = "script";
 
   private Logger logger;
   private Layout loggerLayout = DEFAULT_LAYOUT;
@@ -674,6 +679,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     }
 
     node.setInputProps(props);
+    FileIOUtils.parseScriptFileParameters(execDir, props.getMapByPrefix(""));
   }
 
   /**
@@ -697,7 +703,7 @@ public class FlowRunner extends EventHandler implements Runnable {
     try {
       props =
           projectLoader.fetchProjectProperty(flow.getProjectId(),
-              flow.getVersion(), node.getId() + ".jor");
+              flow.getVersion(), node.getId() + ".job");
     } catch (ProjectManagerException e) {
       e.printStackTrace();
       logger.error("Error loading job override property for job "
@@ -723,7 +729,22 @@ public class FlowRunner extends EventHandler implements Runnable {
 
     customizeJobProperties(props);
 
+    loadProjectProperties(props);
+
     return props;
+  }
+
+  private void loadProjectProperties(Props props) throws IOException {
+    File[] list = execDir.listFiles();
+    for (File file : list) {
+      String name = file.getName();
+      if (name.endsWith(PROPERTY_SUFFIX)) {
+        props = new Props(props, file);
+      }
+    }
+    String busiTime = props.getString(BUSINESS_TIME);
+    busiTime = ExprSupport.parseExpr(busiTime);
+    props.put(BUSINESS_TIME, busiTime);
   }
 
   private void runExecutableNode(ExecutableNode node) throws IOException {

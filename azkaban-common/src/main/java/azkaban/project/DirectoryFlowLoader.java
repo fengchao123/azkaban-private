@@ -194,6 +194,9 @@ public class DirectoryFlowLoader implements ProjectValidator {
             if (type == null) {
               errors.add("Job doesn't have type set '" + jobName + "'.");
             }
+            String showName = prop.getString("showName", jobName);
+
+            node.setShowName(showName);
 
             node.setType(type);
 

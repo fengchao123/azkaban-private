@@ -33,13 +33,17 @@ public class ExecutableJobInfo {
   private final long endTime;
   private final Status status;
   private final int attempt;
-
+  private final String showName;
   private ArrayList<Pair<String, String>> jobPath;
 
-  public ExecutableJobInfo(int execId, int projectId, int version,
-      String flowId, String jobId, long startTime, long endTime, Status status,
-      int attempt) {
+  public ExecutableJobInfo(int execId, String showName, int projectId, int version,
+                           String flowId, String jobId, long startTime, long endTime, Status status,
+                           int attempt) {
     this.execId = execId;
+    if (showName == null) {
+      showName = jobId;
+    }
+    this.showName = showName;
     this.projectId = projectId;
     this.startTime = startTime;
     this.endTime = endTime;
@@ -66,6 +70,10 @@ public class ExecutableJobInfo {
 
   public String getFlowId() {
     return flowId;
+  }
+
+  public String getShowName() {
+    return showName;
   }
 
   public String getImmediateFlowId() {
@@ -138,6 +146,7 @@ public class ExecutableJobInfo {
   public Map<String, Object> toObject() {
     HashMap<String, Object> map = new HashMap<String, Object>();
     map.put("execId", execId);
+    map.put("showName", showName);
     map.put("version", version);
     map.put("flowId", flowId);
     map.put("jobId", jobId);

@@ -1,0 +1,62 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<div class="modal modal-middle" id="job-files-panel">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true" id="close_fileupload-btn">&times;</button>
+              <h4 class="modal-title">依赖文件</h4>
+            </div>
+            <div class="modal-body" style="padding-top:0px">
+            <form id="upload-file-form" enctype="multipart/form-data" method="post" action="$!context/manager">
+            <fieldset class="form-horizontal">
+            <div class="form-group">
+                                <div class="col-sm-9">
+                                  <input type="file" class="form-control" style="display:none" id="file" name="file">
+                                  <input type="hidden" class="form-control" name="ajax" value="uploadfile">
+                                  <input name="project" type="hidden" value="${project.name}"/>
+                                </div>
+                              </div>
+            </form>
+            </fieldset>
+
+            <fieldset class="form-horizontal">
+                        <div class="form-group">
+                                <table id="filelist" class="table table-striped table-bordered">
+                                                <thead>
+                                                  <tr>
+                                                    <th>文件名</th>
+                                                  </tr>
+                                                </thead>
+                                                <tbody>
+                                                  <tr id="addRow_file">
+                                                    <td id="addRow_file-col" colspan="2">
+                                                      <button type="button" class="btn btn-xs btn-success" id="add_file-btn">添加文件</button>
+                                                    </td>
+                                                  </tr>
+                                                </tbody>
+                                </table>
+                        <form>
+             </fieldset>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" id="cancel_file-btn" data-dismiss="modal">取消</button>
+              <button type="button" class="btn btn-primary" id="set_file-btn">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>

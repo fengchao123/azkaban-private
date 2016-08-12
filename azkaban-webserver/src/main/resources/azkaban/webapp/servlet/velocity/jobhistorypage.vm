@@ -101,7 +101,7 @@
       #end
                 </td>
                 <td>
-                  <a href="${context}/manager?project=${projectName}&flow=${job.immediateFlowId}&job=${jobid}">${jobid}</a>
+                  <a href="${context}/manager?project=${projectName}&flow=${job.immediateFlowId}&job=${jobid}">${job.showName}</a>
                 </td>
                 <td>
                   <a href="${context}/manager?project=${projectName}&flow=${job.headFlowId}">${job.flowId}</a>

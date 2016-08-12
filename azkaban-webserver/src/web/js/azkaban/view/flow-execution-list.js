@@ -321,7 +321,11 @@ azkaban.ExecutionListView = Backbone.View.extend({
     var requestURL = contextURL + "/manager?project=" + projectName + "&job=" + node.id + "&history";
     var a = document.createElement("a");
     $(a).attr("href", requestURL);
-    $(a).text(node.id);
+    var showName=node.id;
+    if (node.showName){
+    showName=node.showName
+    }
+    $(a).text(showName);
     $(tdName).append(a);
     if (node.type=="flow") {
       var expandIcon = document.createElement("div");
