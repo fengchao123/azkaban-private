@@ -99,7 +99,7 @@ public class XmlUserManager implements UserManager {
         new HashMap<String, Set<String>>();
 
     /******begin*******modify 从数据库获取人员信息，不从xml文件读取***********************/
-    JdbcUserLoader jdbcUserLoader = new JdbcUserLoader(props);
+    UserLoader jdbcUserLoader = new JdbcUserLoader(props);
 
     try {
 //      //get user
