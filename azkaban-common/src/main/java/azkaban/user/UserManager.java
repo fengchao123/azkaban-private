@@ -64,4 +64,10 @@ public interface UserManager {
   public Role getRole(String roleName);
 
   public boolean validateProxyUser(String proxyUser, User realUser);
+
+  public void addUser(User user);
+
+  public void removeUser(String name);
+
+  public void editUser(User user);
 }

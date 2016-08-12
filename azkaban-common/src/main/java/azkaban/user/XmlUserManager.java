@@ -379,6 +379,7 @@ public class XmlUserManager implements UserManager {
 //    boolean bool = true;
 //    bool = groupRoles.containsKey(group);
     //modify  增加对group校验
+
     return groupRoles.containsKey(group);
   }
 
@@ -390,6 +391,35 @@ public class XmlUserManager implements UserManager {
     } else {
       return false;
     }
+  }
+
+  public void addUser(User user){
+    String username = user.getUserId();
+    String password = user.getPassword();
+    users.put(username, user);
+    logger.info("Loading user " + user.getUserId());
+    userPassword.put(username, password);
+
+    Set<String> proxySet = proxyUserMap.get(username);
+    if (proxySet == null) {
+      proxySet = new HashSet<String>();
+      proxyUserMap.put(username, proxySet);
+    }
+
+    proxySet.add(username);
+  }
+
+  public void removeUser(String username){
+   // String username = user.getUserId();
+    users.remove(username);
+    userPassword.remove(username);
+    proxyUserMap.remove(username);
+  }
+
+  public void editUser(User user){
+    String username = user.getUserId();
+    removeUser(username);
+    addUser(user);
   }
 
 }

@@ -7,6 +7,7 @@ import azkaban.project.ProjectManagerException;
 import azkaban.server.session.Session;
 import azkaban.user.User;
 import azkaban.user.UserAndGroupManager;
+import azkaban.user.UserManager;
 import azkaban.user.UserManagerException;
 import azkaban.webapp.AzkabanWebServer;
 import org.apache.log4j.Logger;
@@ -29,12 +30,14 @@ public class UserManagerServlet extends LoginAbstractAzkabanServlet {
 
     private UserAndGroupManager userAndGroupManager;
     private ExecutorManagerAdapter executorManager;
+    private UserManager userManager;
 
     @Override
     public void init(ServletConfig config) throws ServletException {
         super.init(config);
         AzkabanWebServer server = (AzkabanWebServer) getApplication();
         userAndGroupManager = server.getUserAndGroupManager();
+        userManager = server.getUserManager();
     }
 
     @Override
@@ -75,7 +78,13 @@ public class UserManagerServlet extends LoginAbstractAzkabanServlet {
                 map.put("roles",roles);
                 map.put("lxdh",lxdh);
                 map.put("email",email);
-                addUser(req,ret,map,user);
+                User user1 = new User(name);
+                user1.setPassword(pass);
+                user1.addGroup(group);
+                user1.addRole(roles);
+                user1.setLxdh(lxdh);
+                user1.setEmail(email);
+                addUser(req,ret,map,user,user1);
                 this.writeJSON(resp, ret);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -96,7 +105,13 @@ public class UserManagerServlet extends LoginAbstractAzkabanServlet {
                 map.put("roles",roles);
                 map.put("lxdh",lxdh);
                 map.put("email",email);
-                editUser(req,ret,map,user);
+                User user1 = new User(name);
+                user1.setPassword(pass);
+                user1.addGroup(group);
+                user1.addRole(roles);
+                user1.setLxdh(lxdh);
+                user1.setEmail(email);
+                editUser(req,ret,map,user,user1);
                 this.writeJSON(resp, ret);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -190,15 +205,29 @@ public class UserManagerServlet extends LoginAbstractAzkabanServlet {
         page.render();
     }
 
-    public void addUser(HttpServletRequest req,HashMap<String, Object> ret,Map usermap,User user) throws ServletException{
+    public void addUser(HttpServletRequest req,HashMap<String, Object> ret,Map usermap,User user,User user1) throws ServletException{
         String name = (String)usermap.get("name");
+        String pass = (String)usermap.get("pass");
+        String role = (String)usermap.get("roles");
+        if (name == null || name.trim().isEmpty()) {
+            ret.put("error", "用户名不能为空");
+            return;
+        } else if (pass == null || pass.trim().isEmpty()) {
+            ret.put("error", "密码不能为空");
+            return;
+        }else if (role == null || role.trim().isEmpty()) {
+            ret.put("error", "role不能为空");
+            return;
+        }
         int state = userAndGroupManager.getUserByName(name);
         if (state>0) {
             ret.put("error", "The user already exists!!!");
             return;
         } else {
             try {
+
                 userAndGroupManager.addUser(usermap,user);
+                userManager.addUser(user1);
             } catch (Exception e) {
                 ret.put("error", e.getMessage());
             }
@@ -208,18 +237,50 @@ public class UserManagerServlet extends LoginAbstractAzkabanServlet {
 
     public void deleteUser(HttpServletRequest req,HashMap<String, Object> ret,String name) throws ServletException{
         try {
+            /*
+            int pageNum = 1;
+            int pageSize = 10;
+            List<Map<String,Object>> list = userAndGroupManager.getAllUser(name,pageNum,pageSize);
+            Map<String,Object> map = list.get(0);
+            String username = (String)map.get("username");
+            String password = (String)map.get("password");
+            String usergroup = (String)map.get("usergroup");
+            String roles = (String)map.get("roles");
+            String lxdh = (String)map.get("lxdh");
+            String email = (String)map.get("email");
+            User user1 = new User(username);
+            user1.setPassword(password);
+            user1.addGroup(usergroup);
+            user1.addRole(roles);
+            user1.setLxdh(lxdh);
+            user1.setEmail(email);
+            */
             userAndGroupManager.deleteUser(name);
+            userManager.removeUser(name);
         } catch (Exception e) {
             ret.put("error", e.getMessage());
         }
     }
 
-    public void editUser(HttpServletRequest req,HashMap<String, Object> ret,Map usermap,User user) throws ServletException{
+    public void editUser(HttpServletRequest req,HashMap<String, Object> ret,Map usermap,User user,User user1) throws ServletException{
         String name = (String)usermap.get("name");
+        String pass = (String)usermap.get("pass");
+        String role = (String)usermap.get("roles");
+        if (name == null || name.trim().isEmpty()) {
+            ret.put("error", "用户名不能为空");
+            return;
+        } else if (pass == null || pass.trim().isEmpty()) {
+            ret.put("error", "密码不能为空");
+            return;
+        }else if (role == null || role.trim().isEmpty()) {
+            ret.put("error", "role不能为空");
+            return;
+        }
         int state = userAndGroupManager.getUserByName(name);
         if (state>0) {
             try {
                 userAndGroupManager.editUser(usermap,user);
+                userManager.editUser(user1);
             } catch (Exception e) {
                 ret.put("error", e.getMessage());
             }
