@@ -23,6 +23,8 @@ $(function(){
         $("#lxdh-box").val('');
         $("#email-box").val('');
         $("#user-box").attr('readonly',false);
+        $("#group-box option").eq(0).attr('selected',false);
+        $("#roles-box option").eq(0).attr('selected',false);
     });
 
 
@@ -63,8 +65,18 @@ azkaban.UserManagerView= Backbone.View.extend({
     var requestURL = contextURL + "/userManager";
     var name = $('#user-box').val().trim();
     var pass = $('#pass-box').val().trim();
-    var group = $('#group-box').val().trim();
-    var roles = $('#roles-box').val().trim();
+   // var group = $('#group-box').val().trim();
+   var groupStr="";
+   $("#group-box option:selected").each(function(){
+           groupStr+=$(this).text()+",";
+    });
+    var roleStr="";
+  //  var roles = $('#roles-box').val().trim();
+    $("#roles-box option:selected").each(function(){
+        roleStr+=$(this).text()+",";
+    });
+    var group = groupStr.substring(0,groupStr.length-1);
+    var roles = roleStr.substring(0,roleStr.length-1);
     var lxdh = $('#lxdh-box').val().trim();
     var email = $('#email-box').val().trim();
 
@@ -108,11 +120,12 @@ azkaban.UserManagerView= Backbone.View.extend({
 function editUser($this){
     $("#user-box").val('');
     $("#pass-box").val('');
-    $("#group-box").val('');
-    $("#roles-box").val('');
+  //  $("#group-box").val('');
+  //  $("#roles-box").val('');
     $("#lxdh-box").val('');
     $("#email-box").val('');
-
+    $("#group-box option").eq(0).attr('selected',false);
+    $("#roles-box option").eq(0).attr('selected',false);
     var id = $this.id;
     var userName = $("#"+id).parent().siblings("#username").html();
     var pass     = $("#"+id).parent().siblings("#pass").html();
@@ -120,11 +133,41 @@ function editUser($this){
     var roles    = $("#"+id).parent().siblings("#roles").html();
     var lxdh     = $("#"+id).parent().siblings("#lxdh").html();
     var email    = $("#"+id).parent().siblings("#email").html();
+    var group_array = group.split(",");
+    var roles_array = roles.split(",");
+
+        $("#group-box option").each(function(){
+             var optionVal = $(this).attr("id");
+             if(optionVal!=null&&optionVal!=''){
+                 for(var i = 0;i<group_array.length;i++){
+                     if(optionVal==group_array[i]){
+                        $(this).attr("selected",true);
+                        break;
+                      }
+                   }
+              }
+        });
+
+
+
+    $("#roles-box option").each(function(){
+         var optionVal = $(this).attr("id");;
+         if(optionVal!=null&&optionVal!=''){
+             for(var i = 0;i<roles_array.length;i++){
+                 if(roles_array[i]==optionVal){
+                    $(this).attr("selected",true);
+                    break;
+                  }
+                }
+         }
+    });
+
+
     userManagerView.display("", false);
     $("#user-box").val(userName);
     $("#pass-box").val(pass);
-    $("#group-box").val(group);
-    $("#roles-box").val(roles);
+  //  $("#group-box").val(group);
+ //   $("#roles-box").val(roles);
     $("#lxdh-box").val(lxdh);
     $("#email-box").val(email);
     $("#user-box").attr('readonly',true);
