@@ -35,9 +35,9 @@ public interface TriggerManagerAdapter {
   public List<Trigger> getTriggerUpdates(String triggerSource,
       long lastUpdateTime) throws TriggerManagerException;
 
-  public List<Trigger> getTriggers(String trigegerSource);
-
   public void start() throws TriggerManagerException;
+
+  public List<Trigger> getTriggers(String trigegerSource);
 
   public void shutdown();
 
