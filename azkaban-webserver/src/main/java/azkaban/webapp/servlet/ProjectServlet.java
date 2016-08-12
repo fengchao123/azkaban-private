@@ -194,7 +194,7 @@ public class ProjectServlet extends LoginAbstractAzkabanServlet {
       List<Project> projects = manager.getGroupProjects(user);
       page.add("viewProjects", "group");
       page.add("projects", projects);
-    } else {
+    } else{
       List<Project> projects = manager.getUserProjects(user);
       page.add("viewProjects", "personal");
       page.add("projects", projects);
