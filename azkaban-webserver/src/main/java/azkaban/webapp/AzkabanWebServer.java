@@ -37,6 +37,8 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import azkaban.user.UserAndGroupManager;
+import azkaban.webapp.servlet.*;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
@@ -81,6 +83,7 @@ import azkaban.trigger.builtin.KillExecutionAction;
 import azkaban.trigger.builtin.SlaAlertAction;
 import azkaban.trigger.builtin.SlaChecker;
 import azkaban.user.UserManager;
+import azkaban.user.JdbcUserAndGroupLoader;
 import azkaban.user.XmlUserManager;
 import azkaban.utils.Emailer;
 import azkaban.utils.FileIOUtils;
@@ -90,18 +93,10 @@ import azkaban.utils.Utils;
 import azkaban.webapp.plugin.PluginRegistry;
 import azkaban.webapp.plugin.TriggerPlugin;
 import azkaban.webapp.plugin.ViewerPlugin;
-import azkaban.webapp.servlet.AbstractAzkabanServlet;
-import azkaban.webapp.servlet.ExecutorServlet;
-import azkaban.webapp.servlet.HistoryServlet;
-import azkaban.webapp.servlet.IndexRedirectServlet;
-import azkaban.webapp.servlet.JMXHttpServlet;
-import azkaban.webapp.servlet.ProjectManagerServlet;
-import azkaban.webapp.servlet.ProjectServlet;
-import azkaban.webapp.servlet.ScheduleServlet;
-import azkaban.webapp.servlet.StatsServlet;
-import azkaban.webapp.servlet.TriggerManagerServlet;
 
 import com.linkedin.restli.server.RestliServlet;
+
+
 
 /**
  * The Azkaban Jetty server class
@@ -125,7 +120,7 @@ import com.linkedin.restli.server.RestliServlet;
  */
 public class AzkabanWebServer extends AzkabanServer {
   private static final String AZKABAN_ACCESS_LOGGER_NAME =
-      "azkaban.webapp.servlet.LoginAbstractAzkabanServlet";
+          "azkaban.webapp.servlet.LoginAbstractAzkabanServlet";
 
   private static final Logger logger = Logger.getLogger(AzkabanWebServer.class);
 
@@ -133,7 +128,7 @@ public class AzkabanWebServer extends AzkabanServer {
   public static final String DEFAULT_CONF_PATH = "conf";
   public static final String AZKABAN_PROPERTIES_FILE = "azkaban.properties";
   public static final String AZKABAN_PRIVATE_PROPERTIES_FILE =
-      "azkaban.private.properties";
+          "azkaban.private.properties";
 
   private static final int MAX_FORM_CONTENT_SIZE = 10 * 1024 * 1024;
   private static final int MAX_HEADER_BUFFER_SIZE = 10 * 1024 * 1024;
@@ -157,6 +152,7 @@ public class AzkabanWebServer extends AzkabanServer {
   private ScheduleManager scheduleManager;
   private TriggerManager triggerManager;
   private Map<String, Alerter> alerters;
+  private UserAndGroupManager userAndGroupManager;
 
   private final ClassLoader baseClassLoader;
 
@@ -187,8 +183,8 @@ public class AzkabanWebServer extends AzkabanServer {
     this.props = props;
     this.server = server;
     velocityEngine =
-        configureVelocityEngine(props
-            .getBoolean(VELOCITY_DEV_MODE_PARAM, false));
+            configureVelocityEngine(props
+                    .getBoolean(VELOCITY_DEV_MODE_PARAM, false));
     sessionCache = new SessionCache(props);
     userManager = loadUserManager(props);
 
@@ -203,8 +199,11 @@ public class AzkabanWebServer extends AzkabanServer {
     // load all trigger agents here
     scheduleManager = loadScheduleManager(triggerManager, props);
 
+    //this is a new class create by lj
+    userAndGroupManager = loadUserAndGroupManager(props);
+
     String triggerPluginDir =
-        props.getString("trigger.plugin.dir", "plugins/triggers");
+            props.getString("trigger.plugin.dir", "plugins/triggers");
 
     loadPluginCheckersAndActions(triggerPluginDir);
 
@@ -233,14 +232,14 @@ public class AzkabanWebServer extends AzkabanServer {
     logger.info("Loading user manager class " + userManagerClass.getName());
     UserManager manager = null;
     if (userManagerClass != null
-        && userManagerClass.getConstructors().length > 0) {
+            && userManagerClass.getConstructors().length > 0) {
       try {
         Constructor<?> userManagerConstructor =
-            userManagerClass.getConstructor(Props.class);
+                userManagerClass.getConstructor(Props.class);
         manager = (UserManager) userManagerConstructor.newInstance(props);
       } catch (Exception e) {
         logger.error("Could not instantiate UserManager "
-            + userManagerClass.getName());
+                + userManagerClass.getName());
         throw new RuntimeException(e);
       }
     } else {
@@ -256,6 +255,14 @@ public class AzkabanWebServer extends AzkabanServer {
     return manager;
   }
 
+
+  private UserAndGroupManager loadUserAndGroupManager(Props props){
+    logger.info("Loading JDBC for userAndGroupManager");
+    JdbcUserAndGroupLoader loader = new JdbcUserAndGroupLoader(props);
+    UserAndGroupManager manager = new UserAndGroupManager(loader,props);
+    return manager;
+  }
+
   private ExecutorManager loadExecutorManager(Props props) throws Exception {
     JdbcExecutorLoader loader = new JdbcExecutorLoader(props);
     ExecutorManager execManager = new ExecutorManager(props, loader, alerters);
@@ -263,15 +270,15 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   private ScheduleManager loadScheduleManager(TriggerManager tm, Props props)
-      throws Exception {
+          throws Exception {
     logger.info("Loading trigger based scheduler");
     ScheduleLoader loader =
-        new TriggerBasedScheduleLoader(tm, ScheduleManager.triggerSource);
+            new TriggerBasedScheduleLoader(tm, ScheduleManager.triggerSource);
     return new ScheduleManager(loader);
   }
 
   private TriggerManager loadTriggerManager(Props props)
-      throws TriggerManagerException {
+          throws TriggerManagerException {
     TriggerLoader loader = new JdbcTriggerLoader(props);
     return new TriggerManager(props, loader, executorManager);
   }
@@ -291,18 +298,18 @@ public class AzkabanWebServer extends AzkabanServer {
       ExecutionChecker.setExecutorManager(executorManager);
     }
     triggerManager.registerCheckerType(BasicTimeChecker.type,
-        BasicTimeChecker.class);
+            BasicTimeChecker.class);
     triggerManager.registerCheckerType(SlaChecker.type, SlaChecker.class);
     triggerManager.registerCheckerType(ExecutionChecker.type,
-        ExecutionChecker.class);
+            ExecutionChecker.class);
     triggerManager.registerActionType(ExecuteFlowAction.type,
-        ExecuteFlowAction.class);
+            ExecuteFlowAction.class);
     triggerManager.registerActionType(KillExecutionAction.type,
-        KillExecutionAction.class);
+            KillExecutionAction.class);
     triggerManager
-        .registerActionType(SlaAlertAction.type, SlaAlertAction.class);
+            .registerActionType(SlaAlertAction.type, SlaAlertAction.class);
     triggerManager.registerActionType(CreateTriggerAction.type,
-        CreateTriggerAction.class);
+            CreateTriggerAction.class);
   }
 
   private Map<String, Alerter> loadAlerters(Props props) {
@@ -323,7 +330,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     Map<String, Alerter> installedAlerterPlugins =
-        new HashMap<String, Alerter>();
+            new HashMap<String, Alerter>();
     ClassLoader parentLoader = getClass().getClassLoader();
     File[] pluginDirs = alerterPluginPath.listFiles();
     ArrayList<String> jarPaths = new ArrayList<String>();
@@ -339,13 +346,13 @@ public class AzkabanWebServer extends AzkabanServer {
       if (propertiesDir.exists() && propertiesDir.isDirectory()) {
         File propertiesFile = new File(propertiesDir, "plugin.properties");
         File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
+                new File(propertiesDir, "override.properties");
 
         if (propertiesFile.exists()) {
           if (propertiesOverrideFile.exists()) {
             pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
+                    PropsUtils.loadProps(null, propertiesFile,
+                            propertiesOverrideFile);
           } else {
             pluginProps = PropsUtils.loadProps(null, propertiesFile);
           }
@@ -360,8 +367,8 @@ public class AzkabanWebServer extends AzkabanServer {
 
       String pluginName = pluginProps.getString("alerter.name");
       List<String> extLibClasspath =
-          pluginProps.getStringList("alerter.external.classpaths",
-              (List<String>) null);
+              pluginProps.getStringList("alerter.external.classpaths",
+                      (List<String>) null);
 
       String pluginClass = pluginProps.getString("alerter.class");
       if (pluginClass == null) {
@@ -397,7 +404,7 @@ public class AzkabanWebServer extends AzkabanServer {
         }
 
         urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+                new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
       } else {
         logger.error("Library path " + propertiesDir + " not found.");
         continue;
@@ -457,7 +464,7 @@ public class AzkabanWebServer extends AzkabanServer {
     for (File pluginDir : pluginDirs) {
       if (!pluginDir.exists()) {
         logger.error("Error! Trigger plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
+                + " doesn't exist.");
         continue;
       }
 
@@ -472,13 +479,13 @@ public class AzkabanWebServer extends AzkabanServer {
       if (propertiesDir.exists() && propertiesDir.isDirectory()) {
         File propertiesFile = new File(propertiesDir, "plugin.properties");
         File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
+                new File(propertiesDir, "override.properties");
 
         if (propertiesFile.exists()) {
           if (propertiesOverrideFile.exists()) {
             pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
+                    PropsUtils.loadProps(null, propertiesFile,
+                            propertiesOverrideFile);
           } else {
             pluginProps = PropsUtils.loadProps(null, propertiesFile);
           }
@@ -492,8 +499,8 @@ public class AzkabanWebServer extends AzkabanServer {
       }
 
       List<String> extLibClasspath =
-          pluginProps.getStringList("trigger.external.classpaths",
-              (List<String>) null);
+              pluginProps.getStringList("trigger.external.classpaths",
+                      (List<String>) null);
 
       String pluginClass = pluginProps.getString("trigger.class");
       if (pluginClass == null) {
@@ -529,7 +536,7 @@ public class AzkabanWebServer extends AzkabanServer {
         }
 
         urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+                new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
       } else {
         logger.error("Library path " + propertiesDir + " not found.");
         continue;
@@ -549,7 +556,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
       try {
         Utils.invokeStaticMethod(urlClassLoader, pluginClass,
-            "initiateCheckerTypes", pluginProps, app);
+                "initiateCheckerTypes", pluginProps, app);
       } catch (Exception e) {
         logger.error("Unable to initiate checker types for " + pluginClass);
         continue;
@@ -557,7 +564,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
       try {
         Utils.invokeStaticMethod(urlClassLoader, pluginClass,
-            "initiateActionTypes", pluginProps, app);
+                "initiateActionTypes", pluginProps, app);
       } catch (Exception e) {
         logger.error("Unable to initiate action types for " + pluginClass);
         continue;
@@ -600,6 +607,9 @@ public class AzkabanWebServer extends AzkabanServer {
     return projectManager;
   }
 
+
+  public UserAndGroupManager getUserAndGroupManager() {return userAndGroupManager;}
+
   /**
    *
    */
@@ -623,14 +633,20 @@ public class AzkabanWebServer extends AzkabanServer {
    */
   private VelocityEngine configureVelocityEngine(final boolean devMode) {
     VelocityEngine engine = new VelocityEngine();
-    engine.setProperty("resource.loader", "classpath, jar");
+//    engine.setProperty("resource.loader", "classpath, jar");
+
+    engine.setProperty("resource.loader", "file");
+    engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_PATH,
+            "/root/azkaban-private/azkaban-webserver/src/main/resources");
+    engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_CACHE,false);
+
     engine.setProperty("classpath.resource.loader.class",
-        ClasspathResourceLoader.class.getName());
+            ClasspathResourceLoader.class.getName());
     engine.setProperty("classpath.resource.loader.cache", !devMode);
     engine.setProperty("classpath.resource.loader.modificationCheckInterval",
-        5L);
+            5L);
     engine.setProperty("jar.resource.loader.class",
-        JarResourceLoader.class.getName());
+            JarResourceLoader.class.getName());
     engine.setProperty("jar.resource.loader.cache", !devMode);
     engine.setProperty("resource.manager.logwhenfound", false);
     engine.setProperty("input.encoding", "UTF-8");
@@ -640,14 +656,14 @@ public class AzkabanWebServer extends AzkabanServer {
     engine.setProperty("velocimacro.permissions.allow.inline", true);
     engine.setProperty("velocimacro.library.autoreload", devMode);
     engine.setProperty("velocimacro.library",
-        "/azkaban/webapp/servlet/velocity/macros.vm");
+            "/azkaban/webapp/servlet/velocity/macros.vm");
     engine.setProperty(
-        "velocimacro.permissions.allow.inline.to.replace.global", true);
+            "velocimacro.permissions.allow.inline.to.replace.global", true);
     engine.setProperty("velocimacro.arguments.strict", true);
     engine.setProperty("runtime.log.invalid.references", devMode);
     engine.setProperty("runtime.log.logsystem.class", Log4JLogChute.class);
     engine.setProperty("runtime.log.logsystem.log4j.logger",
-        Logger.getLogger("org.apache.velocity.Logger"));
+            Logger.getLogger("org.apache.velocity.Logger"));
     engine.setProperty("parser.pool.size", 3);
     return engine;
   }
@@ -681,32 +697,32 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     int maxThreads =
-        azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
+            azkabanSettings.getInt("jetty.maxThreads", DEFAULT_THREAD_NUMBER);
     boolean isStatsOn =
-        azkabanSettings.getBoolean("jetty.connector.stats", true);
+            azkabanSettings.getBoolean("jetty.connector.stats", true);
     logger.info("Setting up connector with stats on: " + isStatsOn);
 
     boolean ssl;
     int port;
     final Server server = new Server();
-    if (azkabanSettings.getBoolean("jetty.use.ssl", true)) {
+    if (azkabanSettings.getBoolean("jetty.use.ssl", false)) {
       int sslPortNumber =
-          azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
+              azkabanSettings.getInt("jetty.ssl.port", DEFAULT_SSL_PORT_NUMBER);
       port = sslPortNumber;
       ssl = true;
       logger.info("Setting up Jetty Https Server with port:" + sslPortNumber
-          + " and numThreads:" + maxThreads);
+              + " and numThreads:" + maxThreads);
 
       SslSocketConnector secureConnector = new SslSocketConnector();
       secureConnector.setPort(sslPortNumber);
       secureConnector.setKeystore(azkabanSettings.getString("jetty.keystore"));
       secureConnector.setPassword(azkabanSettings.getString("jetty.password"));
       secureConnector.setKeyPassword(azkabanSettings
-          .getString("jetty.keypassword"));
+              .getString("jetty.keypassword"));
       secureConnector.setTruststore(azkabanSettings
-          .getString("jetty.truststore"));
+              .getString("jetty.truststore"));
       secureConnector.setTrustPassword(azkabanSettings
-          .getString("jetty.trustpassword"));
+              .getString("jetty.trustpassword"));
       secureConnector.setHeaderBufferSize(MAX_HEADER_BUFFER_SIZE);
 
       // set up vulnerable cipher suites to exclude
@@ -739,8 +755,8 @@ public class AzkabanWebServer extends AzkabanServer {
     app = new AzkabanWebServer(server, azkabanSettings);
 
     boolean checkDB =
-        azkabanSettings.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION,
-            false);
+            azkabanSettings.getBoolean(AzkabanDatabaseSetup.DATABASE_CHECK_VERSION,
+                    false);
     if (checkDB) {
       AzkabanDatabaseSetup setup = new AzkabanDatabaseSetup(azkabanSettings);
       setup.loadTableInfo();
@@ -757,16 +773,16 @@ public class AzkabanWebServer extends AzkabanServer {
     server.setThreadPool(httpThreadPool);
 
     String staticDir =
-        azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
+            azkabanSettings.getString("web.resource.dir", DEFAULT_STATIC_DIR);
     logger.info("Setting up web resource dir " + staticDir);
     Context root = new Context(server, "/", Context.SESSIONS);
     root.setMaxFormContentSize(MAX_FORM_CONTENT_SIZE);
 
     String defaultServletPath =
-        azkabanSettings.getString("azkaban.default.servlet.path", "/index");
+            azkabanSettings.getString("azkaban.default.servlet.path", "/index");
     root.setResourceBase(staticDir);
     ServletHolder indexRedirect =
-        new ServletHolder(new IndexRedirectServlet(defaultServletPath));
+            new ServletHolder(new IndexRedirectServlet(defaultServletPath));
     root.addServlet(indexRedirect, "/");
     ServletHolder index = new ServletHolder(new ProjectServlet());
     root.addServlet(index, "/index");
@@ -785,20 +801,21 @@ public class AzkabanWebServer extends AzkabanServer {
     root.addServlet(new ServletHolder(new JMXHttpServlet()), "/jmx");
     root.addServlet(new ServletHolder(new TriggerManagerServlet()), "/triggers");
     root.addServlet(new ServletHolder(new StatsServlet()), "/stats");
+    root.addServlet(new ServletHolder(new UserManagerServlet()), "/userManager");
 
     ServletHolder restliHolder = new ServletHolder(new RestliServlet());
     restliHolder.setInitParameter("resourcePackages", "azkaban.restli");
     root.addServlet(restliHolder, "/restli/*");
 
     String viewerPluginDir =
-        azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
+            azkabanSettings.getString("viewer.plugin.dir", "plugins/viewer");
     loadViewerPlugins(root, viewerPluginDir, app.getVelocityEngine());
 
     // triggerplugin
     String triggerPluginDir =
-        azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
+            azkabanSettings.getString("trigger.plugin.dir", "plugins/triggers");
     Map<String, TriggerPlugin> triggerPlugins =
-        loadTriggerPlugins(root, triggerPluginDir, app);
+            loadTriggerPlugins(root, triggerPluginDir, app);
     app.setTriggerPlugins(triggerPlugins);
     // always have basic time trigger
     // TODO: find something else to do the job
@@ -834,18 +851,18 @@ public class AzkabanWebServer extends AzkabanServer {
 
       public void logTopMemoryConsumers() throws Exception, IOException {
         if (new File("/bin/bash").exists() && new File("/bin/ps").exists()
-            && new File("/usr/bin/head").exists()) {
+                && new File("/usr/bin/head").exists()) {
           logger.info("logging top memeory consumer");
 
           java.lang.ProcessBuilder processBuilder =
-              new java.lang.ProcessBuilder("/bin/bash", "-c",
-                  "/bin/ps aux --sort -rss | /usr/bin/head");
+                  new java.lang.ProcessBuilder("/bin/bash", "-c",
+                          "/bin/ps aux --sort -rss | /usr/bin/head");
           Process p = processBuilder.start();
           p.waitFor();
 
           InputStream is = p.getInputStream();
           java.io.BufferedReader reader =
-              new java.io.BufferedReader(new InputStreamReader(is));
+                  new java.io.BufferedReader(new InputStreamReader(is));
           String line = null;
           while ((line = reader.readLine()) != null) {
             logger.info(line);
@@ -855,25 +872,25 @@ public class AzkabanWebServer extends AzkabanServer {
       }
     });
     logger.info("Server running on " + (ssl ? "ssl" : "") + " port " + port
-        + ".");
+            + ".");
   }
 
   private static Map<String, TriggerPlugin> loadTriggerPlugins(Context root,
-      String pluginPath, AzkabanWebServer azkabanWebApp) {
+                                                               String pluginPath, AzkabanWebServer azkabanWebApp) {
     File triggerPluginPath = new File(pluginPath);
     if (!triggerPluginPath.exists()) {
       return new HashMap<String, TriggerPlugin>();
     }
 
     Map<String, TriggerPlugin> installedTriggerPlugins =
-        new HashMap<String, TriggerPlugin>();
+            new HashMap<String, TriggerPlugin>();
     ClassLoader parentLoader = AzkabanWebServer.class.getClassLoader();
     File[] pluginDirs = triggerPluginPath.listFiles();
     ArrayList<String> jarPaths = new ArrayList<String>();
     for (File pluginDir : pluginDirs) {
       if (!pluginDir.exists()) {
         logger.error("Error! Trigger plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
+                + " doesn't exist.");
         continue;
       }
 
@@ -888,13 +905,13 @@ public class AzkabanWebServer extends AzkabanServer {
       if (propertiesDir.exists() && propertiesDir.isDirectory()) {
         File propertiesFile = new File(propertiesDir, "plugin.properties");
         File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
+                new File(propertiesDir, "override.properties");
 
         if (propertiesFile.exists()) {
           if (propertiesOverrideFile.exists()) {
             pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
+                    PropsUtils.loadProps(null, propertiesFile,
+                            propertiesOverrideFile);
           } else {
             pluginProps = PropsUtils.loadProps(null, propertiesFile);
           }
@@ -909,8 +926,8 @@ public class AzkabanWebServer extends AzkabanServer {
 
       String pluginName = pluginProps.getString("trigger.name");
       List<String> extLibClasspath =
-          pluginProps.getStringList("trigger.external.classpaths",
-              (List<String>) null);
+              pluginProps.getStringList("trigger.external.classpaths",
+                      (List<String>) null);
 
       String pluginClass = pluginProps.getString("trigger.class");
       if (pluginClass == null) {
@@ -946,7 +963,7 @@ public class AzkabanWebServer extends AzkabanServer {
         }
 
         urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+                new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
       } else {
         logger.error("Library path " + propertiesDir + " not found.");
         continue;
@@ -967,8 +984,8 @@ public class AzkabanWebServer extends AzkabanServer {
       Constructor<?> constructor = null;
       try {
         constructor =
-            triggerClass.getConstructor(String.class, Props.class,
-                Context.class, AzkabanWebServer.class);
+                triggerClass.getConstructor(String.class, Props.class,
+                        Context.class, AzkabanWebServer.class);
       } catch (NoSuchMethodException e) {
         logger.error("Constructor not found in " + pluginClass);
         continue;
@@ -977,8 +994,8 @@ public class AzkabanWebServer extends AzkabanServer {
       Object obj = null;
       try {
         obj =
-            constructor.newInstance(pluginName, pluginProps, root,
-                azkabanWebApp);
+                constructor.newInstance(pluginName, pluginProps, root,
+                        azkabanWebApp);
       } catch (Exception e) {
         logger.error(e);
       }
@@ -1006,7 +1023,7 @@ public class AzkabanWebServer extends AzkabanServer {
   }
 
   private static void loadViewerPlugins(Context root, String pluginPath,
-      VelocityEngine ve) {
+                                        VelocityEngine ve) {
     File viewerPluginPath = new File(pluginPath);
     if (!viewerPluginPath.exists()) {
       return;
@@ -1018,7 +1035,7 @@ public class AzkabanWebServer extends AzkabanServer {
     for (File pluginDir : pluginDirs) {
       if (!pluginDir.exists()) {
         logger.error("Error viewer plugin path " + pluginDir.getPath()
-            + " doesn't exist.");
+                + " doesn't exist.");
         continue;
       }
 
@@ -1033,13 +1050,13 @@ public class AzkabanWebServer extends AzkabanServer {
       if (propertiesDir.exists() && propertiesDir.isDirectory()) {
         File propertiesFile = new File(propertiesDir, "plugin.properties");
         File propertiesOverrideFile =
-            new File(propertiesDir, "override.properties");
+                new File(propertiesDir, "override.properties");
 
         if (propertiesFile.exists()) {
           if (propertiesOverrideFile.exists()) {
             pluginProps =
-                PropsUtils.loadProps(null, propertiesFile,
-                    propertiesOverrideFile);
+                    PropsUtils.loadProps(null, propertiesFile,
+                            propertiesOverrideFile);
           } else {
             pluginProps = PropsUtils.loadProps(null, propertiesFile);
           }
@@ -1058,8 +1075,8 @@ public class AzkabanWebServer extends AzkabanServer {
       int pluginOrder = pluginProps.getInt("viewer.order", 0);
       boolean pluginHidden = pluginProps.getBoolean("viewer.hidden", false);
       List<String> extLibClasspath =
-          pluginProps.getStringList("viewer.external.classpaths",
-              (List<String>) null);
+              pluginProps.getStringList("viewer.external.classpaths",
+                      (List<String>) null);
 
       String pluginClass = pluginProps.getString("viewer.servlet.class");
       if (pluginClass == null) {
@@ -1110,17 +1127,17 @@ public class AzkabanWebServer extends AzkabanServer {
               }
             } else {
               logger.error("External library path "
-                  + extLibFile.getAbsolutePath() + " not found.");
+                      + extLibFile.getAbsolutePath() + " not found.");
               continue;
             }
           }
         }
 
         urlClassLoader =
-            new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
+                new URLClassLoader(urls.toArray(new URL[urls.size()]), parentLoader);
       } else {
         logger
-            .error("Library path " + libDir.getAbsolutePath() + " not found.");
+                .error("Library path " + libDir.getAbsolutePath() + " not found.");
         continue;
       }
 
@@ -1160,8 +1177,8 @@ public class AzkabanWebServer extends AzkabanServer {
       AbstractAzkabanServlet avServlet = (AbstractAzkabanServlet) obj;
       root.addServlet(new ServletHolder(avServlet), "/" + pluginWebPath + "/*");
       PluginRegistry.getRegistry().register(
-          new ViewerPlugin(pluginName, pluginWebPath, pluginOrder,
-              pluginHidden, pluginJobTypes));
+              new ViewerPlugin(pluginName, pluginWebPath, pluginOrder,
+                      pluginHidden, pluginJobTypes));
     }
 
     // Velocity needs the jar resource paths to be set.
@@ -1184,7 +1201,7 @@ public class AzkabanWebServer extends AzkabanServer {
     }
 
     if (!new File(azkabanHome).isDirectory()
-        || !new File(azkabanHome).canRead()) {
+            || !new File(azkabanHome).canRead()) {
       logger.error(azkabanHome + " is not a readable directory.");
       return null;
     }
@@ -1192,7 +1209,7 @@ public class AzkabanWebServer extends AzkabanServer {
     File confPath = new File(azkabanHome, DEFAULT_CONF_PATH);
     if (!confPath.exists() || !confPath.isDirectory() || !confPath.canRead()) {
       logger
-          .error(azkabanHome + " does not contain a readable conf directory.");
+              .error(azkabanHome + " does not contain a readable conf directory.");
       return null;
     }
 
@@ -1210,7 +1227,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private static Props loadAzkabanConfigurationFromDirectory(File dir) {
     File azkabanPrivatePropsFile =
-        new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
+            new File(dir, AZKABAN_PRIVATE_PROPERTIES_FILE);
     File azkabanPropsFile = new File(dir, AZKABAN_PROPERTIES_FILE);
 
     Props props = null;
@@ -1229,8 +1246,8 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error("File not found. Could not load azkaban config file", e);
     } catch (IOException e) {
       logger.error(
-          "File found, but error reading. Could not load azkaban config file",
-          e);
+              "File found, but error reading. Could not load azkaban config file",
+              e);
     }
 
     return props;
@@ -1244,7 +1261,7 @@ public class AzkabanWebServer extends AzkabanServer {
     registerMbean("triggerManager", new JmxTriggerManager(triggerManager));
     if (executorManager instanceof ExecutorManager) {
       registerMbean("executorManager", new JmxExecutorManager(
-          (ExecutorManager) executorManager));
+              (ExecutorManager) executorManager));
     }
 
     // Register Log4J loggers as JMX beans so the log level can be
@@ -1252,15 +1269,15 @@ public class AzkabanWebServer extends AzkabanServer {
     HierarchyDynamicMBean log4jMBean = new HierarchyDynamicMBean();
     registerMbean("log4jmxbean", log4jMBean);
     ObjectName accessLogLoggerObjName =
-        log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
+            log4jMBean.addLoggerMBean(AZKABAN_ACCESS_LOGGER_NAME);
 
     if (accessLogLoggerObjName == null) {
       System.out
-          .println("************* loginLoggerObjName is null, make sure there is a logger with name "
-              + AZKABAN_ACCESS_LOGGER_NAME);
+              .println("************* loginLoggerObjName is null, make sure there is a logger with name "
+                      + AZKABAN_ACCESS_LOGGER_NAME);
     } else {
       System.out.println("******** loginLoggerObjName: "
-          + accessLogLoggerObjName.getCanonicalName());
+              + accessLogLoggerObjName.getCanonicalName());
     }
   }
 
@@ -1287,7 +1304,7 @@ public class AzkabanWebServer extends AzkabanServer {
       registeredMBeans.add(mbeanName);
     } catch (Exception e) {
       logger.error("Error registering mbean " + mbeanClass.getCanonicalName(),
-          e);
+              e);
     }
   }
 

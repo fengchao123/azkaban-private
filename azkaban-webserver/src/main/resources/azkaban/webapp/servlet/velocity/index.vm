@@ -85,6 +85,7 @@
             <li#if ($viewProjects == 'personal') class="active"#end><a href="${context}/index">Personal</a></li>
             <li#if ($viewProjects == 'group') class="active"#end><a href="${context}/index?group">Group</a></li>
             <li#if ($viewProjects == 'all') class="active"#end><a href="${context}/index?all">All</a></li>
+
           </ul>
         </div>
         <div class="col-xs-12 col-sm-9 col-content">

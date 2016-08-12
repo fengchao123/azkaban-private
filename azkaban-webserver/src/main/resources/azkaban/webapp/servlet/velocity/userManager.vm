@@ -1,0 +1,249 @@
+#*
+ * Copyright 2012 LinkedIn Corp.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License. You may obtain a copy of
+ * the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
+*#
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+
+#parse("azkaban/webapp/servlet/velocity/style.vm")
+#parse("azkaban/webapp/servlet/velocity/javascript.vm")
+    <script type="text/javascript" src="${context}/js/azkaban/view/userManager.js"></script>
+    <script type="text/javascript">
+      var contextURL = "${context}";
+      var currentTime = ${currentTime};
+      var timezone = "${timezone}";
+      var errorMessage = null;
+      var successMessage = null;
+    </script>
+  </head>
+  <body>
+
+#set ($current_page="userManager")
+#parse ("azkaban/webapp/servlet/velocity/nav.vm")
+
+## Page Header and project search form.
+
+    <div class="az-page-header">
+      <div class="container-full">
+        <div class="row">
+          <div class="header-title">
+            <h1><a href="${context}/userManager">UserManager</a></h1>
+          </div>
+          <div class="header-control">
+            <form id="search-form" method="get" class="form-inline header-form" role="form">
+              <input type="hidden" name="doaction" value="search">
+              <div class="form-group col-xs-9">
+                <div class="input-group">
+                  <input id="userName_serach" type="text" placeholder="User name containing..." value=#if($search_term) "$esc.html(${search_term})" #else "" #end class="form-control input-sm" name="searchterm">
+                  <span class="input-group-btn">
+                    <button class="btn btn-sm btn-primary" id="searchUser">Quick Search</button>
+                  </span>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container-full">
+
+#parse ("azkaban/webapp/servlet/velocity/alerts.vm")
+
+## Table of projects.
+
+      <div class="row row-offcanvas row-offcanvas-left">
+        <div class="col-xs-6 col-sm-3 sidebar-offcanvas">
+          <ul class="nav nav-pills nav-stacked">
+          <!--  <li#if ($viewProjects == 'group') class="active"#end><a href="${context}/userManager?type=group">Group</a></li> -->
+            <li#if ($viewProjects == 'user') class="active"#end><a href="${context}/userManager?type=user">User</a></li>
+
+          </ul>
+        </div>
+        <div class="col-xs-12 col-sm-9 col-content">
+#if ($viewProjects == 'user')
+         <div class="panel panel-success">
+                    <div class="panel-heading">User
+                          <div class="pull-right">
+                            <button id="addUser" class="btn btn-xs btn-success">Add</button>
+                          </div>
+                    </div>
+                    <table class="table table-striped permission-table" id="permissions-table">
+                      <thead>
+                        <tr>
+                          <!--<th></th>-->
+                          <th>UserName</th>
+                          <th style='display:none;'>PassWord</th>
+                          <th>Group</th>
+                          <th>Roles</th>
+                          <th>Phone</th>
+                          <th>Email</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id='user_tbody'>
+                      #if(!$userlist.isEmpty())
+                            #foreach ($user in $userlist)
+                            <tr>
+                             <!-- <td><input type="checkbox" name="delete_state" id="delete_state"></input></td>-->
+                              <td id="username">${user.username}</td>
+                              <td id="pass" style='display:none;'>${user.password}</td>
+                              <td id="group">${user.usergroup}</td>
+                              <td id="roles">${user.roles}</td>
+                              <td id="lxdh">${user.lxdh}</td>
+                              <td id="email">${user.email}</td>
+                              <td><a href="javascript:void(0);" id="${user.username}" onclick="editUser(this);">edit</a>&nbsp;&nbsp;&nbsp;<a href="javascript:void(0);" onclick="deleteUser(this);" id="${user.username}">delete</a></td>
+                            </tr>
+                             #end
+                         #else
+                         <tr colspan="7">No Users Found.</tr>
+                        #end
+                      </tbody>
+                    </table>
+
+                      <ul class="pagination" id="pageSelection">
+                      #if($totalpage>=5)
+                        <li id="previous" class="first"><a href="${context}/userManager?page=${previous.page}&searchterm=$search_term"><span class="arrow">&larr;</span>Previous</a></li>
+                        <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/userManager?page=${page1.page}&searchterm=$search_term">${page1.page}</a></li>
+                        <li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/userManager?page=${page2.page}&searchterm=$search_term">${page2.page}</a></li>
+                        <li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/userManager?page=${page3.page}&searchterm=$search_term">${page3.page}</a></li>
+                        <li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/userManager?page=${page4.page}&searchterm=$search_term">${page4.page}</a></li>
+                        <li id="page5" #if($page5.selected) class="selected" #end><a href="${context}/userManager?page=${page5.page}&searchterm=$search_term">${page5.page}</a></li>
+                        #if($page<$totalpage)
+                        <li id="next"><a href="${context}/userManager?page=${next.page}&searchterm=$search_term">Next<span class="arrow">&rarr;</span></a></li>
+                        #end
+                      #else
+                         #if($totalpage==1)
+                             <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/userManager?page=${page1.page}&searchterm=$search_term">${page1.page}</a></li>
+                         #else
+                             #if($totalpage>0)
+                             <li id="previous" class="first"><a href="${context}/userManager?page=${previous.page}&searchterm=$search_term"><span class="arrow">&larr;</span>Previous</a></li>
+                              #end
+                             #if($totalpage==2)
+                                <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/userManager?page=${page1.page}&searchterm=$search_term">${page1.page}</a></li>
+                                <li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/userManager?page=${page2.page}&searchterm=$search_term">${page2.page}</a></li>
+                             #end
+                             #if($totalpage==3)
+                                 <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/userManager?page=${page1.page}&searchterm=$search_term">${page1.page}</a></li>
+                                 <li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/userManager?page=${page2.page}&searchterm=$search_term">${page2.page}</a></li>
+                                 <li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/userManager?page=${page3.page}&searchterm=$search_term">${page3.page}</a></li>
+                             #end
+                             #if($totalpage==4)
+                                 <li id="page1" #if($page1.selected) class="selected" #end><a href="${context}/userManager?page=${page1.page}&searchterm=$search_term">${page1.page}</a></li>
+                                 <li id="page2" #if($page2.selected) class="selected" #end><a href="${context}/userManager?page=${page2.page}&searchterm=$search_term">${page2.page}</a></li>
+                                 <li id="page3" #if($page3.selected) class="selected" #end><a href="${context}/userManager?page=${page3.page}&searchterm=$search_term">${page3.page}</a></li>
+                                 <li id="page4" #if($page4.selected) class="selected" #end><a href="${context}/userManager?page=${page4.page}&searchterm=$search_term">${page4.page}</a></li>
+                             #end
+                             #if($page<$totalpage)
+                             <li id="next"><a href="${context}/userManager?page=${next.page}&searchterm=$search_term">Next<span class="arrow">&rarr;</span></a></li>
+                             #end
+                         #end
+                      #end
+                        #if($totalpage>0)
+                        <span style="margin-left:10px;height:30px;line-height:30px;">The current page $page </span>
+                        #end
+                      </ul>
+                            </div><!-- /col-xs-12 -->
+                          </div><!-- /row -->
+                  </div>
+
+#else
+          <div class="callout callout-default">
+            <h4>this is group </h4>
+            <p></p>
+          </div>
+#end
+        </div>
+      </div>
+
+
+## Change permissions modal dialog.
+
+      <div class="modal" id="add_userManager">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title" id="change-title">Add User</h4>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-danger" id="change-user-error-msg"></div>
+              <fieldset class="form-horizontal">
+                <div class="form-group">
+                      <label for="path" class="col-sm-2 control-label">User</label>
+                      <div class="col-sm-10">
+                        <input type="text" name="userName" id="user-box" class="form-control">
+                      </div>
+                </div>
+                <div class="form-group">
+                      <label for="path" class="col-sm-2 control-label">Password</label>
+                      <div class="col-sm-10">
+                        <input type="text" name="pass" id="pass-box" class="form-control">
+                      </div>
+                 </div>
+                <div class="form-group">
+                      <label for="path" class="col-sm-2 control-label">Group</label>
+                      <div class="col-sm-10">
+                       <!-- <input type="text" name="userGroup" id="group-box" class="form-control"> -->
+                       <select name="userGroup" id="group-box" class="form-control">
+                           <option></option>
+                           #foreach ($group in $grouplist)
+                           <option id="${group.group}">${group.group}</option>
+                           #end
+                       </select>
+                      </div>
+                 </div>
+                 <div class="form-group">
+                       <label for="path" class="col-sm-2 control-label">Roles</label>
+                       <div class="col-sm-10">
+                        <!-- <input type="text" name="roles" id="roles-box" class="form-control"> -->
+                        <select name="roles" id="roles-box" class="form-control">
+                           <option></option>
+                           #foreach ($role in $roleslist)
+                           <option id="${role.role}">${role.role}</option>
+                           #end
+                        </select>
+                       </div>
+                 </div>
+                 <div class="form-group">
+                       <label for="path" class="col-sm-2 control-label">Phone</label>
+                       <div class="col-sm-10">
+                         <input type="text" name="lxdh" id="lxdh-box" class="form-control">
+                       </div>
+                </div>
+                <div class="form-group">
+                       <label for="path" class="col-sm-2 control-label">Email</label>
+                       <div class="col-sm-10">
+                         <input type="text" name="email" id="email-box" class="form-control">
+                       </div>
+                </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-primary" id="change-btn">Commit</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+#parse ("azkaban/webapp/servlet/velocity/invalidsessionmodal.vm")
+    </div><!-- /container -->
+  </body>
+</html>
+
+
+
+
