@@ -80,8 +80,22 @@ public class UserManagerServlet extends LoginAbstractAzkabanServlet {
                 map.put("email",email);
                 User user1 = new User(name);
                 user1.setPassword(pass);
-                user1.addGroup(group);
-                user1.addRole(roles);
+                // Add the user
+
+                if (group != null) {
+                    String[] groupSplit = group.split("\\s*,\\s*");
+                    for (String group1 : groupSplit) {
+                        user1.addGroup(group1);
+                    }
+                }
+                if (roles != null) {
+                    String[] roleSplit = roles.split("\\s*,\\s*");
+                    for (String role : roleSplit) {
+                        user1.addRole(role);
+                    }
+                }
+//                user1.addGroup(group);
+//                user1.addRole(roles);
                 user1.setLxdh(lxdh);
                 user1.setEmail(email);
                 addUser(req,ret,map,user,user1);
@@ -107,8 +121,20 @@ public class UserManagerServlet extends LoginAbstractAzkabanServlet {
                 map.put("email",email);
                 User user1 = new User(name);
                 user1.setPassword(pass);
-                user1.addGroup(group);
-                user1.addRole(roles);
+                if (group != null) {
+                    String[] groupSplit = group.split("\\s*,\\s*");
+                    for (String group1 : groupSplit) {
+                        user1.addGroup(group1);
+                    }
+                }
+                if (roles != null) {
+                    String[] roleSplit = roles.split("\\s*,\\s*");
+                    for (String role : roleSplit) {
+                        user1.addRole(role);
+                    }
+                }
+//                user1.addGroup(group);
+//                user1.addRole(roles);
                 user1.setLxdh(lxdh);
                 user1.setEmail(email);
                 editUser(req,ret,map,user,user1);

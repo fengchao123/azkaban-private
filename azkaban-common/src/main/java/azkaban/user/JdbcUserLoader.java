@@ -106,7 +106,7 @@ public class JdbcUserLoader  extends AbstractJdbcLoader  implements UserLoader{
             do{
                 String username = rs.getString(1);
                 String password = rs.getString(2);
-                String group = rs.getString(3);
+                String groups = rs.getString(3);
                 String roles = rs.getString(4);
                 String lxdh = rs.getString(5);
                 String email = rs.getString(6);
@@ -114,8 +114,19 @@ public class JdbcUserLoader  extends AbstractJdbcLoader  implements UserLoader{
 
                 // Add the user
                 user = new User(username);
-                user.addGroup(group);
-                user.addRole(roles);
+                if (groups != null) {
+                    String[] roleSplit = groups.split("\\s*,\\s*");
+                    for (String group : roleSplit) {
+                        user.addGroup(group);
+                    }
+                }
+                if (roles != null) {
+                    String[] roleSplit = roles.split("\\s*,\\s*");
+                    for (String role : roleSplit) {
+                        user.addRole(role);
+                    }
+                }
+//                user.addRole(roles);
                 user.setPassword(password);
                 user.setLxdh(lxdh);
                 user.setEmail(email);
