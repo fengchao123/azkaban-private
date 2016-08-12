@@ -37,6 +37,8 @@ import javax.management.MBeanInfo;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
+import azkaban.user.JdbcUserAndGroupLoader;
+import azkaban.user.UserAndGroupManager;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.apache.log4j.jmx.HierarchyDynamicMBean;
@@ -153,6 +155,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
   private final Server server;
   private UserManager userManager;
+  private UserAndGroupManager userAndGroupManager;
   private ProjectManager projectManager;
   // private ExecutorManagerAdapter executorManager;
   private ExecutorManager executorManager;
@@ -198,7 +201,7 @@ public class AzkabanWebServer extends AzkabanServer {
 
     executorManager = loadExecutorManager(props);
     projectManager = loadProjectManager(props);
-
+    userAndGroupManager = loadUserAndGroupManager(props);
     triggerManager = loadTriggerManager(props);
     loadBuiltinCheckersAndActions();
 
@@ -1319,5 +1322,18 @@ public class AzkabanWebServer extends AzkabanServer {
       logger.error(e);
       return null;
     }
+  }
+
+  public UserAndGroupManager getUserAndGroupManager() {
+    return userAndGroupManager;
+  }
+
+  private UserAndGroupManager loadUserAndGroupManager(Props props){
+
+    logger.info("");
+    JdbcUserAndGroupLoader jdbcUserAndGroupLoader = new JdbcUserAndGroupLoader(props);
+    UserAndGroupManager userAndGroupManager = new UserAndGroupManager(jdbcUserAndGroupLoader,props);
+    return userAndGroupManager;
+
   }
 }
