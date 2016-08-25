@@ -40,7 +40,7 @@ import azkaban.utils.Props;
 public class TriggerManager extends EventHandler implements
     TriggerManagerAdapter {
   private static Logger logger = Logger.getLogger(TriggerManager.class);
-  public static final long DEFAULT_SCANNER_INTERVAL_MS = 60000;
+  public static final long DEFAULT_SCANNER_INTERVAL_MS = 6000;
 
   private static Map<Integer, Trigger> triggerIdMap =
       new ConcurrentHashMap<Integer, Trigger>();

@@ -101,21 +101,29 @@ public class SlaAlertAction implements TriggerAction {
   public void doAction() throws Exception {
     logger.info("Alerting on sla failure.");
     Map<String, Object> alert = slaOption.getInfo();
+    String shortMessageTypeFlag = (String) alert.get(slaOption.ALERT_SHORTMESSAGE_TYPE);
+    String alertTypeFlag = (String) alert.get(slaOption.ALERT_TYPE);
     if (alert.containsKey(SlaOption.ALERT_TYPE)) {
-      String alertType = (String) alert.get(SlaOption.ALERT_TYPE);
-      Alerter alerter = alerters.get(alertType);
-      if (alerter != null) {
-        try {
-          ExecutableFlow flow = executorManager.getExecutableFlow(execId);
-          alerter.alertOnSla(slaOption,
-              SlaOption.createSlaMessage(slaOption, flow));
-        } catch (Exception e) {
-          e.printStackTrace();
-          logger.error("Failed to alert by " + alertType);
+      if (alertTypeFlag != "" && alertTypeFlag != null) {
+        String alertType = (String) alert.get(SlaOption.ALERT_TYPE);
+        Alerter alerter = alerters.get(alertType);
+        if (alerter != null) {
+          try {
+            ExecutableFlow flow = executorManager.getExecutableFlow(execId);
+            alerter.alertOnSla(slaOption,
+                    SlaOption.createSlaMessage(slaOption, flow));
+          } catch (Exception e) {
+            e.printStackTrace();
+            logger.error("Failed to alert by " + alertType);
+          }
+        } else {
+          logger.error("Alerter type " + alertType
+                  + " doesn't exist. Failed to alert.");
         }
-      } else {
-        logger.error("Alerter type " + alertType
-            + " doesn't exist. Failed to alert.");
+      }
+
+      if(shortMessageTypeFlag!=""&&shortMessageTypeFlag!=null){
+
       }
     }
   }
