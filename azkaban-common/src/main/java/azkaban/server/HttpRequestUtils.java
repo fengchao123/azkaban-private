@@ -63,6 +63,29 @@ public class HttpRequestUtils {
       execOptions.setSuccessEmailsOverridden(override);
     }
 
+    if (hasParam(req, "failureShortMessages")) {
+      boolean override = getBooleanParam(req, "failureShortMessages", false);
+      execOptions.setFailureShortMessages(override);
+    }
+    if (hasParam(req, "successShortMessages")) {
+      boolean override = getBooleanParam(req, "successShortMessages", false);
+      execOptions.setSuccessShortMessages(override);
+    }
+    if (hasParam(req, "failureNumber")) {
+      String number = getParam(req, "failureNumber");
+      if (!number.isEmpty()) {
+        String[] numberSplit = number.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+        execOptions.setFailureNumber(Arrays.asList(numberSplit));
+      }
+    }
+    if (hasParam(req, "successNumber")) {
+      String number = getParam(req, "successNumber");
+      if (!number.isEmpty()) {
+        String[] numberSplit = number.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+        execOptions.setSuccessNumer(Arrays.asList(numberSplit));
+      }
+    }
+
     if (hasParam(req, "failureEmails")) {
       String emails = getParam(req, "failureEmails");
       if (!emails.isEmpty()) {
