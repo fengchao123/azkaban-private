@@ -43,6 +43,24 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
         $('#failure-emails').attr('disabled', "disabled");
       }
     });
+
+    $("#override-failure-short-messages").click(function(evt) {
+          if ($(this).is(':checked')) {
+            $('#failure-short-messages').attr('disabled', null);
+          }
+          else {
+            $('#failure-short-messages').attr('disabled', "disabled");
+          }
+    });
+
+    $("#override-success-short-messages").click(function(evt) {
+          if ($(this).is(':checked')) {
+            $('#success-short-messages').attr('disabled', null);
+          }
+          else {
+            $('#success-short-messages').attr('disabled', "disabled");
+          }
+    });
   },
 
   render: function() {
@@ -56,6 +74,10 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var notifyFailureLast = $('#notify-failure-last').is(':checked');
     var failureEmailsOverride = $("#override-failure-emails").is(':checked');
     var successEmailsOverride = $("#override-success-emails").is(':checked');
+    var failureShortMessages  = $("#override-failure-short-messages").is(':checked');
+    var successShortMessages  = $("#override-success-short-messages").is(':checked');
+    var failureNumber = $("#failure-short-messages").val();
+    var successNumber = $("#success-short-messages").val();
 
     var flowOverride = {};
     var editRows = $(".editRow");
@@ -81,6 +103,12 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
       disabled: JSON.stringify(disabledList),
       failureEmailsOverride: failureEmailsOverride,
       successEmailsOverride: successEmailsOverride,
+
+      failureShortMessages:failureShortMessages,
+      successShortMessages:successShortMessages,
+      failureNumber:failureNumber,
+      successNumber:successNumber,
+
       failureAction: failureAction,
       failureEmails: failureEmails,
       successEmails: successEmails,
@@ -107,6 +135,10 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
   changeFlowInfo: function() {
     var successEmails = this.model.get("successEmails");
     var failureEmails = this.model.get("failureEmails");
+
+    var successNumber = this.model.get("successNumber");
+    var failureNumber = this.model.get("failureNumber");
+
     var failureActions = this.model.get("failureAction");
     var notifyFailure = this.model.get("notifyFailure");
     var flowParams = this.model.get("flowParams");
@@ -119,6 +151,9 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     var overrideSuccessEmails = this.model.get("failureEmailsOverride");
     var overrideFailureEmails = this.model.get("successEmailsOverride");
 
+    var failureShortMessages = this.model.get("failureShortMessages");
+    var successShortMessages = this.model.get("successShortMessages");
+
     if (overrideSuccessEmails) {
       $('#override-success-emails').attr('checked', true);
     }
@@ -130,6 +165,29 @@ azkaban.FlowExecuteDialogView = Backbone.View.extend({
     }
     else {
       $('#failure-emails').attr('disabled','disabled');
+    }
+
+    if (failureShortMessages) {
+          $('#override-failure-short-messages').attr('checked', true);
+    }
+    else {
+          $('#failure-short-messages').attr('disabled','disabled');
+    }
+
+
+
+    if (successShortMessages) {
+          $('#override-success-short-messages').attr('checked', true);
+    }
+    else {
+          $('#success-short-messages').attr('disabled','disabled');
+    }
+
+    if (successNumber) {
+          $('#success-short-messages').val(successNumber.join());
+    }
+    if (failureNumber) {
+          $('#failure-short-messages').val(failureNumber.join());
     }
 
     if (successEmails) {

@@ -77,6 +77,10 @@ function fetchFlowInfo(model, projectName, flowId, execId) {
       model.set({
         "successEmails": data.successEmails,
         "failureEmails": data.failureEmails,
+
+        "successNumber": data.successNumber,
+        "failureNumber": data.failureNumber,
+
         "failureAction": data.failureAction,
         "notifyFailure": {
           "first": data.notifyFailureFirst,

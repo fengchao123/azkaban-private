@@ -237,6 +237,14 @@ public class ExecuteFlowAction implements TriggerAction {
     if (!executionOptions.isSuccessEmailsOverridden()) {
       executionOptions.setSuccessEmails(flow.getSuccessEmails());
     }
+
+    if (!executionOptions.isFailureShortMessages()) {
+      executionOptions.setFailureNumber(flow.getFailureNumber());
+    }
+    if (!executionOptions.isSuccessShortMessages()) {
+      executionOptions.setSuccessNumer(flow.getSuccessNumber());
+    }
+
     exflow.setExecutionOptions(executionOptions);
 
     try {

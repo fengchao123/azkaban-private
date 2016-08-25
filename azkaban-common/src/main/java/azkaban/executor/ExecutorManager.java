@@ -20,16 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.Thread.State;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -38,6 +30,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import azkaban.utils.DxSendService;
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
 import org.joda.time.DateTime;
@@ -57,6 +50,7 @@ import azkaban.utils.FileIOUtils.LogData;
 import azkaban.utils.JSONUtils;
 import azkaban.utils.Pair;
 import azkaban.utils.Props;
+
 
 /**
  * Executor manager used to manage the client side job.
@@ -1170,7 +1164,7 @@ public class ExecutorManager extends EventHandler implements
    *
    * @throws ExecutorManagerException
    *
-   * @see azkaban.executor.ExecutorManagerAdapter#callExecutorStats(java.lang.String,
+   * @see azkaban.executor.ExecutorManagerAdapter# callExecutorStats(java.lang.String,
    *      azkaban.utils.Pair[])
    */
   @Override
@@ -1430,6 +1424,8 @@ public class ExecutorManager extends EventHandler implements
     ExecutionOptions options = flow.getExecutionOptions();
     // But we can definitely email them.
     Alerter mailAlerter = alerters.get("email");
+    DxSendService dxService = new DxSendService();
+    Map<String,Object> dxmap = new HashMap<String,Object>();
     if (flow.getStatus() == Status.FAILED || flow.getStatus() == Status.KILLED) {
       if (options.getFailureEmails() != null
           && !options.getFailureEmails().isEmpty()) {
@@ -1439,6 +1435,29 @@ public class ExecutorManager extends EventHandler implements
           logger.error(e);
         }
       }
+
+      if (options.getFailureNumber() != null
+              && !options.getFailureNumber().isEmpty()) {
+        try {
+          String sendNum = "";
+          String sendUser = flow.getSubmitUser();
+          long timestamp = flow.getUpdateTime();
+          int executionId = flow.getExecutionId();
+          Calendar ca=Calendar.getInstance();
+          ca.setTimeInMillis(timestamp);
+          SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+          String lastTime = sdf.format(ca.getTime());
+          String content = "project："+flow.getProjectName()+",executionId:"+executionId+",最后执行时间："+lastTime+" 失败!!!";
+          for(int i=0;i<options.getFailureNumber().size();i++) {
+            sendNum = options.getFailureNumber().get(i);
+            dxmap = dxService.sendByWS(sendNum, content, sendUser);
+            executorLoader.insertShortMessage(content, sendUser, sendNum,dxmap);
+          }
+        } catch (Exception e) {
+          logger.error(e);
+        }
+      }
+
       if (options.getFlowParameters().containsKey("alert.type")) {
         String alertType = options.getFlowParameters().get("alert.type");
         Alerter alerter = alerters.get(alertType);
@@ -1459,12 +1478,34 @@ public class ExecutorManager extends EventHandler implements
       if (options.getSuccessEmails() != null
           && !options.getSuccessEmails().isEmpty()) {
         try {
-
           mailAlerter.alertOnSuccess(flow);
         } catch (Exception e) {
           logger.error(e);
         }
       }
+
+      if (options.getSuccessNumber()!= null
+              && !options.getSuccessNumber().isEmpty()) {
+        try {
+          String sendNum = "";
+          String sendUser = flow.getSubmitUser();
+          long timestamp = flow.getUpdateTime();
+          int executionId = flow.getExecutionId();
+          Calendar ca=Calendar.getInstance();
+          ca.setTimeInMillis(timestamp);
+          SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+          String lastTime = sdf.format(ca.getTime());
+          String content = "project："+flow.getProjectName()+",executionId:"+executionId+",最后执行时间："+lastTime+" 成功!!!";
+          for(int i=0;i<options.getSuccessNumber().size();i++) {
+            sendNum = options.getSuccessNumber().get(i);
+            dxmap = dxService.sendByWS(sendNum, content, sendUser);
+            executorLoader.insertShortMessage(content, sendUser,sendNum, dxmap);
+          }
+        } catch (Exception e) {
+          logger.error(e);
+        }
+      }
+
       if (options.getFlowParameters().containsKey("alert.type")) {
         String alertType = options.getFlowParameters().get("alert.type");
         Alerter alerter = alerters.get(alertType);

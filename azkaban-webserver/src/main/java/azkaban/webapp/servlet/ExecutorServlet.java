@@ -578,6 +578,9 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     ret.put("successEmails", flow.getSuccessEmails());
     ret.put("failureEmails", flow.getFailureEmails());
 
+    ret.put("failureNumber", flow.getFailureNumber());
+    ret.put("successNumber", flow.getSuccessNumber());
+
     Schedule sflow = null;
     try {
       for (Schedule sched : scheduleManager.getSchedules()) {
@@ -617,6 +620,10 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
 
     ret.put("successEmails", options.getSuccessEmails());
     ret.put("failureEmails", options.getFailureEmails());
+
+    ret.put("failureNumber", options.getFailureNumber());
+    ret.put("successNumber", options.getSuccessNumber());
+
     ret.put("flowParam", options.getFlowParameters());
 
     FailureAction action = options.getFailureAction();
@@ -897,6 +904,14 @@ public class ExecutorServlet extends LoginAbstractAzkabanServlet {
     if (!options.isSuccessEmailsOverridden()) {
       options.setSuccessEmails(flow.getSuccessEmails());
     }
+
+    if (!options.isSuccessShortMessages()) {
+      options.setSuccessNumer(flow.getSuccessNumber());
+    }
+    if (!options.isFailureShortMessages()) {
+      options.setFailureNumber(flow.getFailureNumber());
+    }
+
     options.setMailCreator(flow.getMailCreator());
 
     try {

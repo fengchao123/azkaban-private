@@ -90,6 +90,27 @@
                     </div>
                     <label>Notify when the flow finishes successfully. Comma, space, or semi-colon delimited list.</label>
                     <textarea class="form-control" rows="3" id="success-emails"></textarea>
+
+                    <h4>出错时的短消息</h4>
+                    <div class="checkbox">
+                        <label>
+                             <input type="checkbox" id="override-failure-short-messages" name="overrideFailureShortMessages" value="overrideFailureShortMessages">
+                             Override flow short message settings.
+                        </label>
+                    </div>
+                    <label>输入需发送的手机号码(逗号分隔)</label>
+                    <textarea class="form-control" rows="3" id="failure-short-messages"></textarea>
+
+                    <h4>成功时的短消息</h4>
+                    <div class="checkbox">
+                        <label>
+                             <input type="checkbox" id="override-success-short-messages" name="overrideSuccessShortMessages" value="overrideSuccessShortMessages">
+                             Override flow short message settings.
+                        </label>
+                    </div>
+                    <label>输入需发送的手机号码(逗号分隔)</label>
+                    <textarea class="form-control" rows="3" id="success-short-messages"></textarea>
+
                   </div>
 
 ## Failure options panel.
