@@ -24,11 +24,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -70,6 +68,7 @@ import azkaban.webapp.AzkabanWebServer;
 import azkaban.webapp.SchedulerStatistics;
 
 public class ScheduleServlet extends LoginAbstractAzkabanServlet {
+  private static final String FILTER_BY_DATE_PATTERN = "MM/dd/yyyy hh:mm aa";
   private static final long serialVersionUID = 1L;
   private static final Logger logger = Logger.getLogger(ScheduleServlet.class);
   private ProjectManager projectManager;
@@ -140,6 +139,10 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
       String[] emailSplit = emailStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
       List<String> slaEmails = Arrays.asList(emailSplit);
 
+      String shortMessageStr = getParam(req, "shortMessage");
+      String[] shortMessageSplit = shortMessageStr.split("\\s*,\\s*|\\s*;\\s*|\\s+");
+      List<String> shortMessage = Arrays.asList(shortMessageSplit);
+
       Map<String, String> settings = getParamGroup(req, "settings");
 
       List<SlaOption> slaOptions = new ArrayList<SlaOption>();
@@ -153,6 +156,7 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         if (sla != null) {
           sla.getInfo().put(SlaOption.INFO_FLOW_NAME, sched.getFlowName());
           sla.getInfo().put(SlaOption.INFO_EMAIL_LIST, slaEmails);
+          sla.getInfo().put(SlaOption.INFO_SHORTMESSAGE_LIST, shortMessage);
           slaOptions.add(sla);
         }
       }
@@ -185,11 +189,16 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
     String rule = parts[1];
     String duration = parts[2];
     String emailAction = parts[3];
+    String shortMessageAction = parts[5];
     String killAction = parts[4];
-    if (emailAction.equals("true") || killAction.equals("true")) {
+    if (emailAction.equals("true")||shortMessageAction.equals("true")||killAction.equals("true")) {
       if (emailAction.equals("true")) {
         slaActions.add(SlaOption.ACTION_ALERT);
         slaInfo.put(SlaOption.ALERT_TYPE, "email");
+      }
+      if (shortMessageAction.equals("true")) {
+        slaActions.add(SlaOption.ACTION_ALERT);
+        slaInfo.put(SlaOption.ALERT_SHORTMESSAGE_TYPE, "shortMessage");
       }
       if (killAction.equals("true")) {
         slaActions.add(SlaOption.ACTION_CANCEL_FLOW);
@@ -286,6 +295,9 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
         ret.put("slaEmails",
             slaOptions.get(0).getInfo().get(SlaOption.INFO_EMAIL_LIST));
 
+        ret.put("shortMessage",
+                slaOptions.get(0).getInfo().get(SlaOption.INFO_SHORTMESSAGE_LIST));
+
         List<Object> setObj = new ArrayList<Object>();
         for (SlaOption sla : slaOptions) {
           setObj.add(sla.toWebObject());
@@ -346,12 +358,235 @@ public class ScheduleServlet extends LoginAbstractAzkabanServlet {
             "azkaban/webapp/servlet/velocity/scheduledflowpage.vm");
 
     List<Schedule> schedules;
+    Map<Integer,Object> map = new HashMap<Integer,Object>();
+    Map<Integer,Object> nummap = new HashMap<Integer,Object>();
+    Map<Integer,Object> finalruntimemap = new HashMap<Integer,Object>();
     try {
       schedules = scheduleManager.getSchedules();
+      if (hasParam(req, "advfilter")) {
+        String projContain = getParam(req, "projcontain");
+        String flowContain = getParam(req, "flowcontain");
+        String userContain = getParam(req, "usercontain");
+        String statusContain = getParam(req, "status");
+        String period_units = getParam(req, "period_units");
+        String has_shortMessage = getParam(req, "has_shortMessage");
+        SimpleDateFormat sdf = new SimpleDateFormat("MM/dd/yyyy hh:mm");
+        String begin = getParam(req, "begin");
+        long beginval = -1;
+        if(begin!=""){
+          String beginstr = begin.substring(0,16);
+          String zwstr = begin.substring(11,13);
+          try {
+            if(begin.indexOf("PM")!=-1&&zwstr!="12"){
+                Date beginDate = sdf.parse(beginstr);
+                Calendar ca=Calendar.getInstance();
+                ca.setTime(beginDate);
+                ca.add(Calendar.HOUR_OF_DAY, 12);
+                beginval = ca.getTimeInMillis();
+            }else{
+                Date beginDate = sdf.parse(beginstr);
+                Calendar ca=Calendar.getInstance();
+                ca.setTime(beginDate);
+                beginval = ca.getTimeInMillis();
+            }
+          } catch (ParseException e) {
+            e.printStackTrace();
+          }
+        }
+        long beginTime = begin == "" ? -1 : beginval;
+        String end = getParam(req, "end");
+        long endval = -1;
+        if(end!=""){
+          String endstr = end.substring(0,16);
+          String zwstr = end.substring(11,13);
+          try {
+            if(end.indexOf("PM")!=-1&&zwstr!="12"){
+              Date endDate = sdf.parse(endstr);
+              Calendar ca=Calendar.getInstance();
+              ca.setTime(endDate);
+              ca.add(Calendar.HOUR_OF_DAY, 12);
+              endval = ca.getTimeInMillis();
+            }else{
+              Date endDate = sdf.parse(endstr);
+              Calendar ca=Calendar.getInstance();
+              ca.setTime(endDate);
+              endval = ca.getTimeInMillis();
+            }
+          } catch (ParseException e) {
+            e.printStackTrace();
+          }
+        }
+        long endTime = end == "" ? -1 : endval;
+
+        for(int i=0;i<schedules.size();i++){
+          Schedule sch = schedules.get(i);
+          String projectname = sch.getProjectName();
+          if(projContain!=""&&projContain!=null){
+            if(!projectname.equals(projContain)){
+              schedules.remove(i);
+              i--;
+            }
+          }else{
+            break;
+          }
+        }
+
+        for(int i=0;i<schedules.size();i++){
+          Schedule sch = schedules.get(i);
+          String flowname = sch.getFlowName();
+          if(flowContain!=""&&flowContain!=null){
+            if(!flowname.equals(flowContain)){
+              schedules.remove(i);
+              i--;
+            }
+          }else{
+            break;
+          }
+        }
+
+        for(int i=0;i<schedules.size();i++){
+          Schedule sch = schedules.get(i);
+          String status = sch.getStatus();
+          if(statusContain!=""&&statusContain!=null){
+            if(!status.equals(statusContain)){
+              schedules.remove(i);
+              i--;
+            }
+          }else{
+            break;
+          }
+        }
+
+        for(int i=0;i<schedules.size();i++){
+          Schedule sch = schedules.get(i);
+          String  successShortMessage = "";
+          String  failureShortMessage = "";
+          String  shortMessageFlag = "";
+          List successNumberList = sch.getExecutionOptions().getSuccessNumber();
+          List failureNumberList = sch.getExecutionOptions().getFailureNumber();
+          if(successNumberList.size()>0){
+            successShortMessage = (String) successNumberList.get(0);
+          }
+          if(failureNumberList.size()>0){
+            failureShortMessage = (String) failureNumberList.get(0);
+          }
+          if(successShortMessage!=""||failureShortMessage!=""){
+              shortMessageFlag = "1";
+          }else{
+              shortMessageFlag = "2";
+          }
+
+          if(has_shortMessage!=""&&has_shortMessage!=null){
+            if(!has_shortMessage.equals(shortMessageFlag)){
+              schedules.remove(i);
+              i--;
+            }
+          }else{
+            break;
+          }
+        }
+
+        for(int i=0;i<schedules.size();i++){
+          Schedule sch = schedules.get(i);
+          String periodStr = sch.getPeriod().toString();
+          String firstChar = periodStr.substring(0,1);
+          String secondChar = periodStr.substring(0,2);
+          String periodUnit = periodStr.substring(periodStr.length()-1,periodStr.length());
+          if("P".equals(firstChar)&&"PT".equals(secondChar)&&"M".equals(periodUnit)){
+            periodUnit = "m";
+          }
+          if(period_units!=""&&period_units!=null){
+            if(!periodUnit.equals(period_units)){
+              schedules.remove(i);
+              i--;
+            }
+          }else{
+            break;
+          }
+        }
+
+        for(int i=0;i<schedules.size();i++){
+          Schedule sch = schedules.get(i);
+          String user = sch.getSubmitUser();
+          if(userContain!=""&&userContain!=null){
+            if(!user.equals(userContain)){
+              schedules.remove(i);
+              i--;
+            }
+          }else{
+            break;
+          }
+        }
+
+        for(int i=0;i<schedules.size();i++){
+          Schedule sch = schedules.get(i);
+          long lastModifyTime = sch.getLastModifyTime();
+          if((begin!=""&&begin!=null)||(end!=""&&end!=null)){
+              if(begin!=""&&beginTime>lastModifyTime){
+                schedules.remove(i);
+                i--;
+              }
+
+              if(end!=""&&endTime<lastModifyTime){
+                schedules.remove(i);
+                i--;
+              }
+          }else{
+            break;
+          }
+        }
+
+      }
     } catch (ScheduleManagerException e) {
       throw new ServletException(e);
     }
+   // schedules.get(0).getExecutionOptions().getSuccessNumber().get(0);
+    for(int i=0;i<schedules.size();i++){
+       int scheduleId = schedules.get(i).getScheduleId();
+       String  successShortMessage = "";
+       String  failureShortMessage = "";
+       List successNumberList = schedules.get(i).getExecutionOptions().getSuccessNumber();
+       List failureNumberList = schedules.get(i).getExecutionOptions().getFailureNumber();
+       if(successNumberList.size()>0){
+        // successShortMessage = (String) successNumberList.get(0);
+         for(int m=0;m<successNumberList.size();m++){
+           successShortMessage+=(String) successNumberList.get(m)+",";
+         }
+       }
+       if(failureNumberList.size()>0){
+        // failureShortMessage = (String) failureNumberList.get(0);
+         for(int n=0;n<failureNumberList.size();n++){
+           failureShortMessage+=(String) failureNumberList.get(n)+",";
+         }
+       }
+      String numMessage = "";
+      if(successShortMessage!=""||failureShortMessage!=""){
+        map.put(scheduleId,"true");
+        if(successShortMessage!=""){
+          numMessage+="Success:"+successShortMessage.substring(0,successShortMessage.length()-1)+";";
+        }
+        if(failureShortMessage!=""){
+          numMessage+="Failure:"+failureShortMessage.substring(0,failureShortMessage.length()-1)+";";
+        }
+        nummap.put(scheduleId,numMessage);
+      }else{
+        map.put(scheduleId,"false");
+        nummap.put(scheduleId,numMessage);
+      }
+    }
+    for(int i=0;i<schedules.size();i++){
+      int scheduleId = schedules.get(i).getScheduleId();
+      long lastModifyTime = schedules.get(i).getLastModifyTime();
+      Calendar ca = Calendar.getInstance();
+      ca.setTimeInMillis(lastModifyTime);
+      SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+      String finalruntime = sdf.format(ca.getTime());
+      finalruntimemap.put(scheduleId,finalruntime);
+    }
     page.add("schedules", schedules);
+    page.add("map", map);
+    page.add("nummap", nummap);
+    page.add("finalruntimemap", finalruntimemap);
     page.render();
   }
 

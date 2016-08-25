@@ -70,6 +70,10 @@ azkaban.ChangeSlaView = Backbone.View.extend({
         $('#slaEmails').val(data.slaEmails.join());
       }
 
+      if (data.shortMessage) {
+        $('#shortMessage').val(data.shortMessage.join());
+      }
+
       var allJobNames = data.allJobNames;
 
       indexToName[0] = "";
@@ -140,6 +144,19 @@ azkaban.ChangeSlaView = Backbone.View.extend({
             }
           }
           cKill.appendChild(killCheck);
+
+          var cShortMessage = rFlowRule.insertCell(-1);
+          var shortMessageCheck = document.createElement("input");
+          shortMessageCheck.type = "checkbox";
+          shortMessageCheck.id = "shortMessageId";
+          for (var act in data.settings[setting].actions) {
+            if (data.settings[setting].actions[act] == "SHORTMESSAGE") {
+              shortMessageCheck.checked = true;
+            }
+          }
+          cShortMessage.appendChild(shortMessageCheck);
+          $("#shortMessageId").css("display","none");
+
           $('.durationpick').datetimepicker({
             pickDate: false,
             use24hours: true
@@ -181,6 +198,7 @@ azkaban.ChangeSlaView = Backbone.View.extend({
 
   handleSetSla: function(evt) {
     var slaEmails = $('#slaEmails').val();
+    var shortMessageVal = $('#shortMessage').val();
     var settings = {};
     var tFlowRules = document.getElementById("flowRulesTbl").tBodies[0];
     for (var row = 0; row < tFlowRules.rows.length-1; row++) {
@@ -190,13 +208,15 @@ azkaban.ChangeSlaView = Backbone.View.extend({
       var duration = rFlowRule.cells[2].firstChild.value;
       var email = rFlowRule.cells[3].firstChild.checked;
       var kill = rFlowRule.cells[4].firstChild.checked;
-      settings[row] = id + "," + rule + "," + duration + "," + email + "," + kill;
+      var shortMessage = rFlowRule.cells[5].firstChild.checked;
+      settings[row] = id + "," + rule + "," + duration + "," + email + ","+shortMessage+"," + kill;
     }
 
     var slaData = {
       scheduleId: this.scheduleId,
       ajax: "setSla",
       slaEmails: slaEmails,
+      shortMessage:shortMessageVal,
       settings: settings
     };
 
@@ -253,6 +273,13 @@ azkaban.ChangeSlaView = Backbone.View.extend({
     var killCheck = document.createElement("input");
     killCheck.type = "checkbox";
     cKill.appendChild(killCheck);
+
+    var cShortMessage = rFlowRule.insertCell(-1);
+    var shortMessageCheck = document.createElement("input");
+    shortMessageCheck.type = "checkbox";
+    shortMessageCheck.id = "shortMessageId";
+    cShortMessage.appendChild(shortMessageCheck);
+    $("#shortMessageId").css("display","none");
 
     $('.durationpick').datetimepicker({
       pickDate: false,

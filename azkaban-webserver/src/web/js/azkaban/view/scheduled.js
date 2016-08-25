@@ -28,3 +28,59 @@ $(function() {
   //  slaView.show();
   //});
 });
+
+
+
+var advFilterView;
+azkaban.AdvFilterView = Backbone.View.extend({
+  events: {
+    "click #filter-btn": "handleAdvFilter"
+  },
+
+  initialize: function(settings) {
+    $('#datetimebegin').datetimepicker();
+    $('#datetimeend').datetimepicker();
+    $('#datetimebegin').on('change.dp', function(e) {
+      $('#datetimeend').data('DateTimePicker').setStartDate(e.date);
+    });
+    $('#datetimeend').on('change.dp', function(e) {
+      $('#datetimebegin').data('DateTimePicker').setEndDate(e.date);
+    });
+    $('#adv-filter-error-msg').hide();
+  },
+
+  handleAdvFilter: function(evt) {
+    console.log("handleAdv");
+    var projcontain = $('#projcontain').val();
+    var flowcontain = $('#flowcontain').val();
+    var usercontain = $('#usercontain').val();
+    var status = $('#status option:selected').text();
+    var period_units = $('#period_units').val();
+    var has_shortMessage = $('#has_shortMessage').val();
+    var begin  = $('#datetimebegin').val();
+    var end    = $('#datetimeend').val();
+
+    console.log("filtering schedule");
+
+   // var historyURL = contextURL + "/history"
+    var redirectURL = contextURL + "/schedule"
+
+    var requestURL = redirectURL + "?advfilter=true" + "&projcontain=" + projcontain + "&flowcontain=" + flowcontain + "&usercontain=" + usercontain + "&period_units=" + period_units +"&status="+status+"&has_shortMessage="+has_shortMessage+ "&begin=" + begin + "&end=" + end ;
+    window.location = requestURL;
+  },
+
+  render: function() {
+  }
+});
+
+$(function() {
+  filterView = new azkaban.AdvFilterView({el: $('#adv-filter')});
+  $('#adv-filter-btn').click( function() {
+    $('#adv-filter').modal();
+  });
+});
+
+function queryallschedule(){
+    var redirectURL = contextURL + "/schedule";
+    window.location = redirectURL;
+}

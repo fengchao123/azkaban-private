@@ -1763,7 +1763,9 @@ public class ProjectManagerServlet extends LoginAbstractAzkabanServlet {
     }
   }
 
-  private void handleUpload(HttpServletRequest req, HttpServletResponse resp,
+  private void
+
+  handleUpload(HttpServletRequest req, HttpServletResponse resp,
       Map<String, Object> multipart, Session session) throws ServletException,
       IOException {
     HashMap<String, String> ret = new HashMap<String, String>();

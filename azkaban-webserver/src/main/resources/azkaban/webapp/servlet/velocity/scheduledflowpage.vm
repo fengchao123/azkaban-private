@@ -54,11 +54,30 @@
 
   ## Page header.
 
+
     <div class="az-page-header">
-      <div class="container-full">
-        <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
-      </div>
-    </div>
+          <div class="container-full">
+            <div class="row">
+              <div class="header-title">
+                 <h1><a href="${context}/schedule">Scheduled Flows</a></h1>
+              </div>
+              <div class="header-control">
+                <form id="search-form" method="get" class="form-inline header-form" role="form">
+                  <input type="hidden" name="search" value="true">
+                  <div class="form-group">
+                    <div class="input-group">
+                      <input type="text" style='visibility:hidden;' id="searchtextbox" placeholder="flow name containing ..." value=#if($search_term) "$esc.html(${search_term})" #else "" #end class="form-control input-sm" name="searchterm">
+                      <span class="input-group-btn">
+                        <button type="button" class="btn btn-success btn-sm" id="adv-filter-btn" >Advanced Filter</button>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="queryallschedule()">Reset</button>
+                      </span>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
 
   ## Page content.
 
@@ -73,15 +92,18 @@
               <tr>
                 <!--th class="execid">Execution Id</th-->
                 <th>#</th>
-                <th>ID</th>
-                <th>Flow</th>
-                <th>Project</th>
-                <th>Submitted By</th>
-                <th class="date">First Scheduled to Run</th>
-                <th class="date">Next Execution Time</th>
-                <th class="date">Repeats Every</th>
-                <th>Has SLA</th>
-                <th colspan="2" class="action ignoresort">Action</th>
+                <th nowrap>ID</th>
+                <th nowrap>Flow</th>
+                <th nowrap>Project</th>
+                <th nowrap>Submitted By</th>
+                <th class="date" >First Scheduled to Run</th>
+                <th  >Final Scheduled to Run</th>
+                <th class="date" >Next Execution Time</th>
+                <th class="date" nowrap>Repeats Every</th>
+                <th >Has ShortMessage</th>
+                <th >ShortMessage Number</th>
+                <th nowrap>Has SLA</th>
+                <th colspan="2" class="action ignoresort" style='text-align:center;' nowrap>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -100,8 +122,31 @@
                 </td>
                 <td>${sched.submitUser}</td>
                 <td>$utils.formatDateTime(${sched.firstSchedTime})</td>
+
+                <td style='text-align:left;'>
+                    #foreach($data in $finalruntimemap.entrySet())
+                        #if(${data.key}==${sched.scheduleId})
+                            ${data.value}
+                        #end
+                    #end
+                </td>
                 <td>$utils.formatDateTime(${sched.nextExecTime})</td>
                 <td>$utils.formatPeriod(${sched.period})</td>
+                <td style='text-align:center;'>
+                    #foreach($data in $map.entrySet())
+                        #if(${data.key}==${sched.scheduleId})
+                            ${data.value}
+                        #end
+                    #end
+
+                </td>
+                <td style='text-align:left;word-break:break-all; word-wrap:break-word;'>
+                    #foreach($data in $nummap.entrySet())
+                        #if(${data.key}==${sched.scheduleId})
+                            ${data.value}
+                        #end
+                    #end
+                </td>
                 <td>#if(${sched.slaOptions}) true #else false #end</td>
                 <td><button type="button" id="removeSchedBtn" class="btn btn-sm btn-danger" onclick="removeSched(${sched.scheduleId})" >Remove Schedule</button></td>
                 <td><button type="button" id="addSlaBtn" class="btn btn-sm btn-primary" onclick="slaView.initFromSched(${sched.scheduleId}, '${sched.flowName}')" >Set SLA</button></td>
@@ -118,6 +163,100 @@
       </div><!-- /row -->
 
   ## Set SLA modal.
+
+
+  ## Advanced Filter Modal.
+
+      <div class="modal" id="adv-filter">
+        <div class="modal-dialog">
+          <div class="modal-content" style='width:700px;'>
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+              <h4 class="modal-title">Advanced Filter</h4>
+            </div>
+            <div class="modal-body">
+              <div class="alert alert-danger" id="adv-filter-error-msg">$error_msg</div>
+              <fieldset class="form-horizontal">
+                <div class="form-group">
+                  <label for="projcontain" class="col-sm-2 control-label">Project</label>
+                  <div class="col-sm-10">
+                    <input id="projcontain" type="text" placeholder="Project name containing ..." value="" class="form-control" name="projcontain">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="flowcontain" class="col-sm-2 control-label">Flow</label>
+                  <div class="col-sm-10">
+                    <input id="flowcontain" type="text" placeholder="Flow name containing ..." value="" class="form-control" name="flowcontain">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="usercontain" class="col-sm-2 control-label">User</label>
+                  <div class="col-sm-10">
+                    <input id="usercontain" type="text" placeholder="User name containing ..." value="" class="form-control" name="usercontain">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="status" class="col-sm-2 control-label">Status</label>
+                  <div class="col-sm-10">
+                    <select id="status" class="form-control">
+                      <option value=0></option>
+                      <option value=10>READY</option>
+                      <option value=20>PREPARING</option>
+                      <option value=30>RUNNING</option>
+                      <option value=40>PAUSED</option>
+                      <option value=50>SUCCEED</option>
+                      <option value=60>KILLED</option>
+                      <option value=70>FAILED</option>
+                      <option value=80>FAILED FINISHING</option>
+                      <option value=90>SKIPPED</option>
+                      <option value=100>DISABLED</option>
+                      <option value=110>QUEUED</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="period" class="col-sm-2 control-label">Period</label>
+                  <div class="col-sm-10">
+                    <select id="period_units" class="form-control">
+                      <option value=""></option>
+                      <option value="D">Days</option>
+                      <option value="H">Hours</option>
+                      <option value="m">Minutes</option>
+                      <option value="M">Months</option>
+                      <option value="W">Weeks</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="period" class="col-sm-2 control-label" style='height:15px;line-height:12px;'>Has ShortMessage</label>
+                  <div class="col-sm-10">
+                    <select id="has_shortMessage" class="form-control">
+                      <option value=""></option>
+                      <option value="1">True</option>
+                      <option value="2">False</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="datetimebegin" class="col-sm-2 control-label">Between</label>
+                  <div class="col-sm-4">
+                    <input type="text" id="datetimebegin" value="" class="ui-datetime-container form-control">
+                  </div>
+                  <label for="datetimeend" class="col-sm-2 control-label control-label-center">and</label>
+                  <div class="col-sm-4">
+                    <input type="text" id="datetimeend" value="" class="ui-datetime-container form-control">
+                  </div>
+                </div>
+              </fieldset>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+              <button class="btn btn-success" id="filter-btn">Filter</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
 
   #parse ("azkaban/webapp/servlet/velocity/slapanel.vm")
 
