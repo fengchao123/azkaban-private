@@ -44,6 +44,10 @@ public class Flow {
 
   private List<String> failureEmail = new ArrayList<String>();
   private List<String> successEmail = new ArrayList<String>();
+
+  private List<String> failureNumber = new ArrayList<String>();
+  private List<String> successNumber = new ArrayList<String>();
+
   private String mailCreator = DefaultMailCreator.DEFAULT_MAIL_CREATOR;
   private ArrayList<String> errors;
   private int version = -1;
@@ -119,6 +123,20 @@ public class Flow {
   public List<String> getFailureEmails() {
     return failureEmail;
   }
+
+  public List<String> getFailureNumber() {
+    return failureNumber;
+  }
+  public List<String> getSuccessNumber() {
+    return successNumber;
+  }
+  public void addFailureNumber(Collection<String> number) {
+    failureNumber.addAll(number);
+  }
+  public void addSuccessNumber(Collection<String> number) {
+    successNumber.addAll(number);
+  }
+
 
   public void setMailCreator(String mailCreator) {
     this.mailCreator = mailCreator;
