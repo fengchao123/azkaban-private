@@ -42,11 +42,15 @@ public class SlaOption {
   public static final String INFO_JOB_NAME = "JobName";
   public static final String INFO_PROGRESS_PERCENT = "ProgressPercent";
   public static final String INFO_EMAIL_LIST = "EmailList";
+  public static final String INFO_SHORTMESSAGE_LIST = "ShortMessageList";
 
   // always alert
   public static final String ALERT_TYPE = "SlaAlertType";
   public static final String ACTION_CANCEL_FLOW = "SlaCancelFlow";
   public static final String ACTION_ALERT = "SlaAlert";
+
+  public static final String ALERT_SHORTMESSAGE_TYPE = "SlaShortMessageAlertType";
+  public static final String ACTION_SHORTMESSAGE = "ShortMessageAlert";
 
   private String type;
   private Map<String, Object> info;
@@ -122,10 +126,18 @@ public class SlaOption {
       slaObj.put("rule", "SUCCESS");
     }
     List<String> actionsObj = new ArrayList<String>();
+    String shortMessageType = (String) info.get(ALERT_SHORTMESSAGE_TYPE);
+    String alertType = (String) info.get(ALERT_TYPE);
     for (String act : actions) {
       if (act.equals(ACTION_ALERT)) {
-        actionsObj.add("EMAIL");
-      } else {
+        if(alertType!=""&&alertType!=null) {
+          actionsObj.add("EMAIL");
+        }
+
+        if(shortMessageType!=""&&shortMessageType!=null){
+          actionsObj.add("SHORTMESSAGE");
+        }
+      }else {
         actionsObj.add("KILL");
       }
     }
