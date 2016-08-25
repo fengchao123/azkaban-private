@@ -25,6 +25,8 @@ import java.lang.annotation.Inherited;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -892,7 +894,7 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
   /**
    * {@inheritDoc}
    *
-   * @see azkaban.executor.ExecutorLoader#updateExecutor(int)
+   * @see azkaban.executor.ExecutorLoader# updateExecutor(int)
    */
   @Override
   public void updateExecutor(Executor executor) throws ExecutorManagerException {
@@ -1581,5 +1583,30 @@ public class JdbcExecutorLoader extends AbstractJdbcLoader implements
       throw new ExecutorManagerException("Error updating execution id "
         + executionId, e);
     }
+  }
+
+  public void insertShortMessage(String content,String sendUser,String sendNum,Map<String,Object> dxmap) throws ExecutorManagerException{
+    String  resContent = "";
+    String  status     = "";
+    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    String time = sdf.format(new Date());
+    //  java.sql.Date time1 = new java.sql.Date(time.getTime());
+      if(dxmap!=null){
+        if(dxmap.get("resContent")!=null&&dxmap.get("resContent")!="") {
+          resContent = (String) dxmap.get("resContent");
+        }
+        if(dxmap.get("status")!=null&&dxmap.get("status")!="") {
+          status = (String) dxmap.get("status");
+        }
+      }
+      String sql = " insert into shortmessage(sendUser,sendTime,sendContent,resNum,resContent,status) values('"+sendUser+
+                   "','"+time+"','"+content+"','"+sendNum+"','"+resContent+"','"+status+"')";
+      QueryRunner runner = createQueryRunner();
+      try {
+          int rows = runner.update(sql);
+      } catch (SQLException e) {
+        throw new ExecutorManagerException("insert into shortmessage error!!!",e);
+      }
+
   }
 }

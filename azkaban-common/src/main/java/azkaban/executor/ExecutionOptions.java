@@ -43,14 +43,23 @@ public class ExecutionOptions {
   private static final String NOTIFY_ON_LAST_FAILURE = "notifyOnLastFailure";
   private static final String SUCCESS_EMAILS = "successEmails";
   private static final String FAILURE_EMAILS = "failureEmails";
+
+  private static final String SUCCESS_NUMBER = "successNumber";
+  private static final String FAILURE_NUMBER = "failureNumber";
+
   private static final String FAILURE_ACTION = "failureAction";
   private static final String PIPELINE_LEVEL = "pipelineLevel";
   private static final String PIPELINE_EXECID = "pipelineExecId";
   private static final String QUEUE_LEVEL = "queueLevel";
   private static final String CONCURRENT_OPTION = "concurrentOption";
   private static final String DISABLE = "disabled";
+
   private static final String FAILURE_EMAILS_OVERRIDE = "failureEmailsOverride";
   private static final String SUCCESS_EMAILS_OVERRIDE = "successEmailsOverride";
+
+  private static final String FAILURE_SHORTMESSAGE = "failureShortMessages";
+  private static final String SUCCESS_SHORTMESSAGE = "successShortMessages";
+
   private static final String MAIL_CREATOR = "mailCreator";
   private static final String MEMORY_CHECK = "memoryCheck";
 
@@ -58,6 +67,12 @@ public class ExecutionOptions {
   private boolean notifyOnLastFailure = false;
   private boolean failureEmailsOverride = false;
   private boolean successEmailsOverride = false;
+
+  private ArrayList<String> failureNumber = new ArrayList<String>();
+  private ArrayList<String> successNumber = new ArrayList<String>();
+  private boolean failureShortMessages = false;
+  private boolean successShortMessages = false;
+
   private ArrayList<String> failureEmails = new ArrayList<String>();
   private ArrayList<String> successEmails = new ArrayList<String>();
 
@@ -84,6 +99,39 @@ public class ExecutionOptions {
   public Map<String, String> getFlowParameters() {
     return flowParameters;
   }
+
+  public void setFailureNumber(Collection<String> number) {
+    failureNumber = new ArrayList<String>(number);
+  }
+
+  public boolean isFailureShortMessages() {
+    return this.failureShortMessages;
+  }
+
+  public boolean isSuccessShortMessages() {
+    return this.successShortMessages;
+  }
+
+  public void setFailureShortMessages(boolean override) {
+    this.failureShortMessages = override;
+  }
+
+  public void setSuccessShortMessages(boolean override) {
+    this.successShortMessages = override;
+  }
+
+  public List<String> getFailureNumber() {
+    return failureNumber;
+  }
+
+  public void setSuccessNumer(Collection<String> number) {
+    successNumber = new ArrayList<String>(number);
+  }
+
+  public List<String> getSuccessNumber() {
+    return successNumber;
+  }
+
 
   public void setFailureEmails(Collection<String> emails) {
     failureEmails = new ArrayList<String>(emails);
@@ -116,6 +164,7 @@ public class ExecutionOptions {
   public List<String> getSuccessEmails() {
     return successEmails;
   }
+
 
   public boolean getNotifyOnFirstFailure() {
     return notifyOnFirstFailure;
@@ -201,6 +250,10 @@ public class ExecutionOptions {
     flowOptionObj.put(NOTIFY_ON_LAST_FAILURE, this.notifyOnLastFailure);
     flowOptionObj.put(SUCCESS_EMAILS, successEmails);
     flowOptionObj.put(FAILURE_EMAILS, failureEmails);
+
+    flowOptionObj.put(SUCCESS_NUMBER, successNumber);
+    flowOptionObj.put(FAILURE_NUMBER, failureNumber);
+
     flowOptionObj.put(FAILURE_ACTION, failureAction.toString());
     flowOptionObj.put(PIPELINE_LEVEL, pipelineLevel);
     flowOptionObj.put(PIPELINE_EXECID, pipelineExecId);
@@ -209,6 +262,10 @@ public class ExecutionOptions {
     flowOptionObj.put(DISABLE, initiallyDisabledJobs);
     flowOptionObj.put(FAILURE_EMAILS_OVERRIDE, failureEmailsOverride);
     flowOptionObj.put(SUCCESS_EMAILS_OVERRIDE, successEmailsOverride);
+
+    flowOptionObj.put(FAILURE_SHORTMESSAGE, failureShortMessages);
+    flowOptionObj.put(SUCCESS_SHORTMESSAGE, successShortMessages);
+
     flowOptionObj.put(MAIL_CREATOR, mailCreator);
     flowOptionObj.put(MEMORY_CHECK, memoryCheck);
     return flowOptionObj;
@@ -266,6 +323,17 @@ public class ExecutionOptions {
         false));
     options.setFailureEmailsOverridden(wrapper.getBool(FAILURE_EMAILS_OVERRIDE,
         false));
+
+    options.setSuccessNumer(wrapper.<String> getList(SUCCESS_NUMBER,
+            Collections.<String> emptyList()));
+    options.setFailureNumber(wrapper.<String> getList(FAILURE_NUMBER,
+            Collections.<String> emptyList()));
+
+    options.setSuccessShortMessages(wrapper.getBool(SUCCESS_SHORTMESSAGE,
+            false));
+    options.setFailureShortMessages(wrapper.getBool(FAILURE_SHORTMESSAGE,
+            false));
+
 
     options.setMemoryCheck(wrapper.getBool(MEMORY_CHECK, true));
 

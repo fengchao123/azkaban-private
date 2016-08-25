@@ -281,4 +281,6 @@ public interface ExecutorLoader {
 
   public int removeExecutionLogsByTime(long millis)
       throws ExecutorManagerException;
+
+  public void insertShortMessage(String content,String sendUser,String sendNum,Map<String,Object> dxmap) throws ExecutorManagerException;
 }
